@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="?attr/materialCardViewElevatedStyle"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layoutDirection="ltr"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="6dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp">
+
+        <LinearLayout
+            android:id="@+id/statusArea"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/overlay_drag"
+            android:minWidth="@dimen/overlay_status_min_width"
+            android:orientation="vertical"
+            android:paddingEnd="6dp">
+
+            <TextView
+                android:id="@+id/textCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
+                android:text="@string/overlay_ready"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+            <TextView
+                android:id="@+id/textDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="180dp"
+                android:maxLines="2"
+                android:textAppearance="?attr/textAppearanceLabelSmall" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonStart"
+            style="@style/Widget.AutoClicker.OverlayButton"
+            android:layout_width="@dimen/overlay_button_size"
+            android:layout_height="@dimen/overlay_button_size"
+            android:contentDescription="@string/overlay_start"
+            app:icon="@drawable/ic_play" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPause"
+            style="@style/Widget.AutoClicker.OverlayButton"
+            android:layout_width="@dimen/overlay_button_size"
+            android:layout_height="@dimen/overlay_button_size"
+            android:contentDescription="@string/overlay_pause"
+            app:icon="@drawable/ic_pause" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonStop"
+            style="@style/Widget.AutoClicker.OverlayButton"
+            android:layout_width="@dimen/overlay_button_size"
+            android:layout_height="@dimen/overlay_button_size"
+            android:contentDescription="@string/overlay_stop"
+            app:icon="@drawable/ic_stop" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

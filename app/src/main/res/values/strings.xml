@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Auto Clicker</string>
+    <string name="accessibility_service_label">Auto Clicker task service</string>
+    <string name="accessibility_service_description">Types your chosen command into the chat app you start a session in and closes popups there. It only acts inside that app, only during a session you start, and it sends nothing off this device.</string>
+
+    <string name="section_permissions">Permissions</string>
+    <string name="section_task">Task</string>
+    <string name="section_popups">Popups</string>
+    <string name="restricted_settings_hint">If Android blocks the accessibility toggle as a restricted setting, open App info for this app, tap the ⋮ menu, choose Allow restricted settings, then try again.</string>
+    <string name="permission_accessibility">Accessibility service</string>
+    <string name="permission_overlay">Display over other apps</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_battery">Unrestricted battery</string>
+    <string name="permission_granted">Granted</string>
+    <string name="permission_missing">Not granted</string>
+    <string name="permission_action">Grant</string>
+
+    <string name="label_command">Command</string>
+    <string name="label_interval_minutes">Interval (min)</string>
+    <string name="label_interval_seconds">Interval (sec)</string>
+    <string name="label_duration_hours">Run for (hours)</string>
+    <string name="label_duration_minutes">Run for (min)</string>
+    <string name="label_jitter_min">Jitter min (sec)</string>
+    <string name="label_jitter_max">Jitter max (sec)</string>
+    <string name="label_target">Target app package (optional)</string>
+    <string name="helper_target">Leave empty to use the app on screen when you press Start.</string>
+    <string name="label_keywords">Dismiss buttons labelled</string>
+    <string name="helper_keywords">Separate with commas. Matches whole words on short button labels.</string>
+    <string name="label_skip_lists">Ignore buttons inside chat lists</string>
+    <string name="label_keep_screen">Keep screen on while running</string>
+    <string name="button_launch">Save and show controls</string>
+    <string name="toast_permissions_needed">Grant the accessibility and overlay permissions first.</string>
+
+    <string name="error_empty_command">Enter a command.</string>
+    <string name="error_command_too_long">The command is too long.</string>
+    <string name="error_interval_too_short">Use an interval of at least 10 seconds.</string>
+    <string name="error_duration_too_short">Must be at least one interval.</string>
+    <string name="error_jitter_range">Min must not be above max.</string>
+    <string name="error_jitter_too_large">Max jitter must be at least 5 seconds below the interval.</string>
+    <string name="error_bad_package">Enter a package name such as com.example.chat.</string>
+
+    <string name="overlay_ready">Ready</string>
+    <string name="overlay_paused">Paused</string>
+    <string name="overlay_detail">Left %1$s · ✓%2$d ✗%3$d · ⨯%4$d</string>
+    <string name="overlay_drag">Drag to move</string>
+    <string name="overlay_start">Start or resume</string>
+    <string name="overlay_pause">Pause</string>
+    <string name="overlay_stop">Stop, or close the controls when stopped</string>
+
+    <string name="notice_open_chat">Open the chat first</string>
+    <string name="notice_enable_service">Turn on the accessibility service</string>
+    <string name="notice_invalid_settings">Check the settings in the app</string>
+    <string name="notice_finished">Session finished</string>
+    <string name="notice_screen_locked">Skipped: screen off or locked</string>
+    <string name="notice_target_hidden">Skipped: chat app not on screen</string>
+    <string name="notice_no_input">Skipped: no message box found</string>
+    <string name="notice_type_failed">Failed: could not enter text</string>
+    <string name="notice_not_confirmed">Failed: send not confirmed</string>
+
+    <string name="notification_channel">Automation session</string>
+    <string name="notification_idle">Controls ready</string>
+    <string name="notification_running">Session running</string>
+    <string name="notification_paused">Session paused</string>
+    <string name="notification_exit">Stop and close</string>
+</resources>

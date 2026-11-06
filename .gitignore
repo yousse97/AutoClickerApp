@@ -1,0 +1,12 @@
+.gradle/
+.idea/
+.kotlin/
+build/
+captures/
+local.properties
+*.iml
+*.jks
+*.keystore
+.swarm/
+.claude-flow/
+.claude/
