@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">النقر التلقائي</string>
+    <string name="accessibility_service_label">خدمة مهام النقر التلقائي</string>
+    <string name="accessibility_service_description">تكتب الأمر الذي تختاره في تطبيق الدردشة الذي تبدأ فيه الجلسة وتغلق النوافذ المنبثقة فيه. تعمل داخل هذا التطبيق فقط وأثناء جلسة تبدأها أنت، ولا ترسل أي شيء خارج هذا الجهاز.</string>
+
+    <string name="section_permissions">الأذونات</string>
+    <string name="section_task">المهمة</string>
+    <string name="section_popups">النوافذ المنبثقة</string>
+    <string name="restricted_settings_hint">إذا منع أندرويد تفعيل إمكانية الوصول كإعداد مقيّد، افتح معلومات التطبيق، ثم اضغط قائمة ⋮، واختر السماح بالإعدادات المقيّدة، ثم حاول مرة أخرى.</string>
+    <string name="permission_accessibility">خدمة إمكانية الوصول</string>
+    <string name="permission_overlay">الظهور فوق التطبيقات الأخرى</string>
+    <string name="permission_notifications">الإشعارات</string>
+    <string name="permission_battery">بطارية غير مقيّدة</string>
+    <string name="permission_granted">ممنوح</string>
+    <string name="permission_missing">غير ممنوح</string>
+    <string name="permission_action">منح</string>
+
+    <string name="label_interval_minutes">الفاصل (دقيقة)</string>
+    <string name="label_interval_seconds">الفاصل (ثانية)</string>
+    <string name="label_duration_hours">العمل (ساعات)</string>
+    <string name="label_duration_minutes">العمل (دقائق)</string>
+    <string name="label_jitter_min">أقل تفاوت (ثانية)</string>
+    <string name="label_jitter_max">أقصى تفاوت (ثانية)</string>
+    <string name="label_target">حزمة التطبيق المستهدف</string>
+    <string name="helper_target">اتركه فارغًا لاستخدام التطبيق الظاهر على الشاشة عند الضغط على بدء.</string>
+    <string name="label_keywords">إغلاق الأزرار المسماة</string>
+    <string name="helper_keywords">افصل بينها بفواصل. تتم مطابقة الكلمات الكاملة في تسميات الأزرار القصيرة.</string>
+    <string name="label_skip_lists">تجاهل الأزرار داخل قوائم الدردشة</string>
+    <string name="label_keep_screen">إبقاء الشاشة مضاءة أثناء التشغيل</string>
+    <string name="button_launch">حفظ وإظهار أدوات التحكم</string>
+    <string name="toast_permissions_needed">امنح إذني إمكانية الوصول والظهور فوق التطبيقات أولًا.</string>
+
+    <string name="error_empty_command">أدخل أمرًا.</string>
+    <string name="error_command_too_long">الأمر طويل جدًا.</string>
+    <string name="error_interval_too_short">استخدم فاصلًا لا يقل عن 10 ثوانٍ.</string>
+    <string name="error_duration_too_short">يجب ألا يقل عن فاصل واحد.</string>
+    <string name="error_jitter_range">يجب ألا يتجاوز الحد الأدنى الحد الأقصى.</string>
+    <string name="error_jitter_too_large">يجب أن يقل أقصى تفاوت عن الفاصل بما لا يقل عن 5 ثوانٍ.</string>
+    <string name="error_bad_package">أدخل اسم حزمة مثل com.example.chat.</string>
+
+    <string name="overlay_ready">جاهز</string>
+    <string name="overlay_paused">متوقف مؤقتًا</string>
+    <string name="overlay_detail">المتبقي %1$s · ✓%2$d ✗%3$d · ⨯%4$d · #%5$d · ⚡%6$d</string>
+    <string name="overlay_drag">اسحب للتحريك</string>
+    <string name="overlay_start">بدء أو استئناف</string>
+    <string name="overlay_pause">إيقاف مؤقت</string>
+    <string name="overlay_stop">إيقاف، أو إغلاق أدوات التحكم عند التوقف</string>
+
+    <string name="notice_open_chat">افتح الدردشة أولًا</string>
+    <string name="notice_enable_service">فعّل خدمة إمكانية الوصول</string>
+    <string name="notice_invalid_settings">راجع الإعدادات في التطبيق</string>
+    <string name="notice_finished">انتهت الجلسة</string>
+    <string name="notice_screen_locked">تم التخطي: الشاشة مطفأة أو مقفلة</string>
+    <string name="notice_target_hidden">تم التخطي: تطبيق الدردشة غير ظاهر</string>
+    <string name="notice_no_input">تم التخطي: لم يتم العثور على مربع الرسالة</string>
+    <string name="notice_type_failed">فشل: تعذر إدخال النص</string>
+    <string name="notice_not_confirmed">فشل: لم يتم تأكيد الإرسال</string>
+
+    <string name="notification_channel">جلسة التشغيل التلقائي</string>
+    <string name="notification_idle">أدوات التحكم جاهزة</string>
+    <string name="notification_running">الجلسة قيد التشغيل</string>
+    <string name="notification_paused">الجلسة متوقفة مؤقتًا</string>
+    <string name="notification_exit">إيقاف وإغلاق</string>
+
+    <string name="language_switch_label" translatable="false">English</string>
+    <string name="language_switch_description">تغيير اللغة</string>
+
+    <string name="activation_title">تفعيل التطبيق</string>
+    <string name="activation_message">أرسل رمز الترخيص إلى المزوّد، ثم أدخل مفتاح التفعيل الذي تستلمه.</string>
+    <string name="label_passcode">مفتاح التفعيل</string>
+    <string name="button_activate">تفعيل</string>
+    <string name="error_passcode_empty">أدخل مفتاح التفعيل.</string>
+    <string name="error_passcode_wrong">مفتاح التفعيل غير صحيح. حاول مرة أخرى.</string>
+    <string name="error_tampered">تم تعديل هذه النسخة من التطبيق ولا يمكن تشغيلها.</string>
+
+    <string name="label_command_numbered">الأمر %1$d</string>
+    <string name="button_add_command">+ إضافة أمر</string>
+    <string name="button_remove_command">حذف الأمر</string>
+    <string name="mode_simultaneous">إرسال في نفس الوقت</string>
+    <string name="mode_delay">تأخير بعد السابق</string>
+    <string name="label_delay_seconds">التأخير (ثانية)</string>
+
+    <string name="label_rest_hours">الراحة (ساعات)</string>
+    <string name="label_rest_minutes">الراحة (دقائق)</string>
+    <string name="helper_rest">بعد الراحة يُعاد فتح التطبيق المستهدف ويبدأ العمل من جديد. اجعل الراحة 0 للتوقف بعد فترة عمل واحدة.</string>
+    <string name="button_pick_app">اختيار</string>
+    <string name="picker_title">اختر التطبيق المستهدف</string>
+    <string name="label_room">اسم أو رقم الغرفة</string>
+    <string name="helper_room">يُحفظ على هذا الجهاز فقط. أدخل اسم الغرفة أو رقمها تمامًا كما يظهر في التطبيق، مثل 41110.</string>
+
+    <string name="error_too_many_commands">استخدم 5 أوامر كحد أقصى.</string>
+    <string name="error_bad_command_delay">أدخل تأخيرًا من 1 إلى 3600 ثانية.</string>
+    <string name="error_sequence_too_long">يجب أن يتسع الفاصل لمجموع التأخيرات مع التفاوت و5 ثوانٍ.</string>
+    <string name="error_room_too_long">معرّف الغرفة طويل جدًا.</string>
+
+    <string name="overlay_resting">راحة %1$s</string>
+    <string name="notification_resting">في فترة راحة</string>
+    <string name="notice_locked">فعّل التطبيق أولًا</string>
+    <string name="notice_recovering">جارٍ إعادة فتح تطبيق الدردشة</string>
+    <string name="notice_not_launchable">تعذر فتح التطبيق المستهدف</string>
+    <string name="notice_no_chat">لم يتم العثور على شاشة الدردشة</string>
+    <string name="notice_room_not_found">لم يتم العثور على الغرفة في قنواتي الخاصة</string>
+
+    <string name="tab_task1">المهمة 1 (الدورية الأساسية)</string>
+    <string name="tab_task2">YOUSE 2 (التفاعلية / الحدث الثانوي)</string>
+    <string name="section_shared">الإعدادات المشتركة</string>
+    <string name="label_reactive_enabled">تفعيل YOUSE 2</string>
+    <string name="helper_reactive">تعمل بجانب المهمة 1 أثناء الجلسة، بما في ذلك فترات الراحة، وفقط عندما تكون الدردشة ظاهرة على الشاشة.</string>
+    <string name="label_triggers">العبارات المحفّزة</string>
+    <string name="helper_keywords_reactive">عبارة في كل سطر، أو افصل بينها بفواصل.</string>
+    <string name="label_reaction_command">أمر التفاعل</string>
+    <string name="label_restrict_room">تقييد الإرسال بهذه الغرفة فقط</string>
+    <string name="helper_restrict_room">تُرسل الأوامر فقط عندما يظهر هذا المعرّف في أعلى الدردشة. إذا كان أعلى الدردشة يعرض اسم الغرفة، فأدخل الاسم هنا بدلًا من الرقم.</string>
+    <string name="label_license_id">رمز الترخيص</string>
+    <string name="license_privacy">هذا الرمز مشتق باتجاه واحد من معرّف جهازك. لا يكشف أي بيانات شخصية ولا يرسله التطبيق إلى أي مكان.</string>
+    <string name="button_copy">نسخ</string>
+    <string name="toast_copied">تم النسخ</string>
+    <string name="section_admin">مولد مفاتيح التفعيل</string>
+    <string name="button_generate_key">إنشاء مفتاح التفعيل</string>
+    <string name="error_license_id">أدخل رمز ترخيص مثل AB12-CD34-EF56.</string>
+    <string name="error_room_required">أدخل الغرفة المطلوب التقييد بها.</string>
+    <string name="error_no_trigger">أدخل عبارة محفّزة واحدة على الأقل.</string>
+    <string name="error_no_reaction">أدخل أمر التفاعل.</string>
+    <string name="overlay_shrink">تصغير إلى شارة</string>
+    <string name="overlay_size">تغيير الحجم</string>
+    <string name="notice_wrong_room">تم التخطي: ليس في الغرفة المستهدفة</string>
+    <string name="notice_reaction_failed">YOUSE 2: لم يتم إرسال التفاعل</string>
+    <string name="notice_engine_error">تمت معالجة خطأ، وما زال التشغيل مستمرًا</string>
+</resources>

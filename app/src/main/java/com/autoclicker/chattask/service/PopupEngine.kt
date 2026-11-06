@@ -7,6 +7,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.autoclicker.chattask.core.ClickGuard
 import com.autoclicker.chattask.core.KeywordSet
 import com.autoclicker.chattask.core.ViewIdMatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -40,7 +41,13 @@ class PopupEngine(
             for (ignored in signal) {
                 val now = SystemClock.elapsedRealtime()
                 val full = windowChanged.getAndSet(false) || now - lastFullScanMs >= FULL_SCAN_GAP_MS
-                scan(full)
+                try {
+                    scan(full)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (ignored: RuntimeException) {
+                    // A window can vanish in the middle of a query. The next event scans again.
+                }
                 delay(MIN_SCAN_GAP_MS)
             }
         }

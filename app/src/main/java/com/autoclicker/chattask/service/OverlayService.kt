@@ -1,6 +1,7 @@
 package com.autoclicker.chattask.service
 
 import android.annotation.SuppressLint
+import android.util.TypedValue
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,6 +14,7 @@ import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.Gravity
@@ -26,6 +28,8 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.formatDuration
+import com.autoclicker.chattask.data.LanguageManager
+import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.OverlayControlsBinding
 import com.autoclicker.chattask.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
@@ -49,11 +53,19 @@ class OverlayService : Service() {
     private lateinit var params: WindowManager.LayoutParams
     private var overlayAttached = false
     private var shownPhase: TaskPhase? = null
+    private var compact = false
+    private lateinit var store: SettingsStore
+    private lateinit var wakeLock: PowerManager.WakeLock
+    private val texts: Context get() = LanguageManager.localize(this)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        store = SettingsStore(this)
+        wakeLock = getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AutoClicker:session")
+            .apply { setReferenceCounted(false) }
         createChannel()
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(TaskPhase.IDLE), foregroundType())
         if (!Settings.canDrawOverlays(this)) {
@@ -83,13 +95,14 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        applyWakeLock(false)
         if (overlayAttached) windowManager.removeView(binding.root)
         overlayAttached = false
         super.onDestroy()
     }
 
     private fun attachOverlay() {
-        val themed = ContextThemeWrapper(this, R.style.Theme_AutoClicker)
+        val themed = ContextThemeWrapper(texts, R.style.Theme_AutoClicker)
         binding = OverlayControlsBinding.inflate(LayoutInflater.from(themed))
         params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -120,6 +133,12 @@ class OverlayService : Service() {
                 AutoTaskService.instance?.stopSession()
             }
         }
+        binding.buttonShrink.setOnClickListener { setCompact(true) }
+        binding.buttonSize.setOnClickListener {
+            store.overlaySizeIndex = (store.overlaySizeIndex + 1) % SIZE_SCALES.size
+            applyOverlaySize()
+        }
+        applyOverlaySize()
         val drag = DragListener()
         binding.root.setOnTouchListener(drag)
         binding.statusArea.setOnTouchListener(drag)
@@ -128,26 +147,69 @@ class OverlayService : Service() {
         overlayAttached = true
     }
 
+    /** The tiny badge shows only the countdown, and a tap on it brings the controls back. */
+    private fun setCompact(value: Boolean) {
+        compact = value
+        val controls = if (value) View.GONE else View.VISIBLE
+        binding.textDetail.visibility = controls
+        listOf(
+            binding.buttonStart,
+            binding.buttonPause,
+            binding.buttonStop,
+            binding.buttonShrink,
+            binding.buttonSize,
+        ).forEach { it.visibility = controls }
+        applyOverlaySize()
+    }
+
+    private fun applyOverlaySize() {
+        val scale = SIZE_SCALES[store.overlaySizeIndex.coerceIn(SIZE_SCALES.indices)]
+        val titleSp = if (compact) BADGE_TEXT_SP else TITLE_TEXT_SP
+        binding.textCountdown.setTextSize(TypedValue.COMPLEX_UNIT_SP, titleSp * scale)
+        binding.textDetail.setTextSize(TypedValue.COMPLEX_UNIT_SP, DETAIL_TEXT_SP * scale)
+        val minWidth = resources.getDimensionPixelSize(R.dimen.overlay_status_min_width)
+        binding.statusArea.minimumWidth = if (compact) 0 else (minWidth * scale).toInt()
+        val buttonSize = (resources.getDimensionPixelSize(R.dimen.overlay_button_size) * scale).toInt()
+        listOf(
+            binding.buttonStart,
+            binding.buttonPause,
+            binding.buttonStop,
+            binding.buttonShrink,
+            binding.buttonSize,
+        ).forEach { button ->
+            button.layoutParams = button.layoutParams.apply {
+                width = buttonSize
+                height = buttonSize
+            }
+        }
+        if (overlayAttached) windowManager.updateViewLayout(binding.root, params)
+    }
+
     private fun render(status: TaskStatus) {
         binding.textCountdown.text = when (status.phase) {
             TaskPhase.RUNNING -> formatDuration(status.nextInMs)
-            TaskPhase.PAUSED -> getString(R.string.overlay_paused)
-            TaskPhase.IDLE -> getString(R.string.overlay_ready)
+            TaskPhase.RESTING -> texts.getString(R.string.overlay_resting, formatDuration(status.nextInMs))
+            TaskPhase.PAUSED -> texts.getString(R.string.overlay_paused)
+            TaskPhase.IDLE -> texts.getString(R.string.overlay_ready)
         }
         binding.textDetail.text = if (status.notice != 0) {
-            getString(status.notice)
+            texts.getString(status.notice)
         } else {
-            getString(
+            texts.getString(
                 R.string.overlay_detail,
                 formatDuration(status.sessionLeftMs),
                 status.sent,
                 status.failed,
                 status.popups,
+                status.workCycle,
+                status.reactions,
             )
         }
-        binding.buttonStart.isEnabled = status.phase != TaskPhase.RUNNING
-        binding.buttonPause.isEnabled = status.phase == TaskPhase.RUNNING
-        applyKeepScreenOn(status.phase == TaskPhase.RUNNING && status.keepScreenOn)
+        val active = status.phase == TaskPhase.RUNNING || status.phase == TaskPhase.RESTING
+        binding.buttonStart.isEnabled = !active
+        binding.buttonPause.isEnabled = active
+        applyKeepScreenOn(active && status.keepScreenOn)
+        applyWakeLock(active)
         if (status.phase != shownPhase) {
             shownPhase = status.phase
             getSystemService(NotificationManager::class.java)
@@ -155,7 +217,14 @@ class OverlayService : Service() {
         }
     }
 
-    /** A sleeping or locked phone has no chat window to type into, so stay awake while running. */
+    /** Keeps timers and detection alive while the user-started session is active. */
+    @SuppressLint("WakelockTimeout")
+    private fun applyWakeLock(active: Boolean) {
+        if (active && !wakeLock.isHeld) wakeLock.acquire()
+        if (!active && wakeLock.isHeld) wakeLock.release()
+    }
+
+    /** A locked phone has no chat window to type into or reopen, so this covers rest as well. */
     private fun applyKeepScreenOn(keepOn: Boolean) {
         val flag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         if ((params.flags and flag != 0) == keepOn) return
@@ -172,7 +241,7 @@ class OverlayService : Service() {
     private fun createChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            getString(R.string.notification_channel),
+            texts.getString(R.string.notification_channel),
             NotificationManager.IMPORTANCE_LOW,
         )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -185,17 +254,18 @@ class OverlayService : Service() {
         val shutdown = PendingIntent.getService(this, 1, shutdownIntent, flags)
         val text = when (phase) {
             TaskPhase.RUNNING -> R.string.notification_running
+            TaskPhase.RESTING -> R.string.notification_resting
             TaskPhase.PAUSED -> R.string.notification_paused
             TaskPhase.IDLE -> R.string.notification_idle
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText(getString(text))
+            .setContentTitle(texts.getString(R.string.app_name))
+            .setContentText(texts.getString(text))
             .setContentIntent(openApp)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .addAction(R.drawable.ic_stop, getString(R.string.notification_exit), shutdown)
+            .addAction(R.drawable.ic_stop, texts.getString(R.string.notification_exit), shutdown)
             .build()
     }
 
@@ -235,6 +305,7 @@ class OverlayService : Service() {
                         windowManager.updateViewLayout(binding.root, params)
                     }
                 }
+                MotionEvent.ACTION_UP -> if (compact && !dragging) setCompact(false)
             }
             return true
         }
@@ -244,6 +315,10 @@ class OverlayService : Service() {
         private const val CHANNEL_ID = "automation"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_SHUTDOWN = "com.autoclicker.chattask.action.SHUTDOWN"
+        private val SIZE_SCALES = listOf(0.8f, 1f, 1.25f)
+        private const val BADGE_TEXT_SP = 12f
+        private const val TITLE_TEXT_SP = 16f
+        private const val DETAIL_TEXT_SP = 11f
 
         /** Returns false if Android refused, for example a background start on a recent version. */
         fun start(context: Context): Boolean {

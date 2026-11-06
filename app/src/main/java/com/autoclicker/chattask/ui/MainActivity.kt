@@ -11,33 +11,67 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
+import com.google.android.material.tabs.TabLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.ConfigError
+import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.TaskConfig
+import com.autoclicker.chattask.data.LanguageManager
 import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.ActivityMainBinding
 import com.autoclicker.chattask.databinding.RowPermissionBinding
+import com.autoclicker.chattask.security.AppGate
 import com.autoclicker.chattask.service.AutoTaskService
 import com.autoclicker.chattask.service.OverlayService
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: SettingsStore
+    private lateinit var commandEditor: CommandListEditor
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPermissions() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!AppGate.isUnlocked(this)) {
+            startActivity(Intent(this, ActivationActivity::class.java))
+            finish()
+            return
+        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         store = SettingsStore(this)
-        if (savedInstanceState == null) showConfig(store.loadConfig())
+        commandEditor = CommandListEditor(binding.commandList, binding.buttonAddCommand)
+        if (savedInstanceState == null) {
+            val config = store.loadConfig()
+            showConfig(config)
+            commandEditor.show(config.commands)
+        } else {
+            val saved = savedInstanceState.getString(STATE_COMMANDS)?.let(SettingsStore::decodeCommands)
+            commandEditor.show(saved ?: store.loadConfig().commands)
+        }
+
+        binding.tabsTask.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) = showTab(tab.position)
+            override fun onTabUnselected(tab: TabLayout.Tab) = Unit
+            override fun onTabReselected(tab: TabLayout.Tab) = Unit
+        })
+        val tab = savedInstanceState?.getInt(STATE_TAB) ?: 0
+        binding.tabsTask.getTabAt(tab)?.select()
+        showTab(tab)
+        if (AppGate.isAdmin(this)) setUpKeyGenerator()
+
+        binding.topBar.buttonLanguage.setOnClickListener { LanguageManager.toggle(this) }
+        binding.buttonPickApp.setOnClickListener {
+            AppPickerDialog.show(this) { binding.inputTarget.setText(it) }
+        }
 
         binding.rowAccessibility.title.setText(R.string.permission_accessibility)
         binding.rowOverlay.title.setText(R.string.permission_overlay)
@@ -61,38 +95,82 @@ class MainActivity : AppCompatActivity() {
         binding.buttonLaunch.setOnClickListener { launchOverlay() }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_COMMANDS, SettingsStore.encodeCommands(commandEditor.read()))
+        outState.putInt(STATE_TAB, binding.tabsTask.selectedTabPosition)
+    }
+
+    private fun showTab(position: Int) {
+        binding.panelTask1.visibility = if (position == 0) View.VISIBLE else View.GONE
+        binding.panelReactive.visibility = if (position == 1) View.VISIBLE else View.GONE
+    }
+
+    /** Only reached on the device activated with the master passcode. */
+    private fun setUpKeyGenerator() = with(binding) {
+        cardAdmin.visibility = View.VISIBLE
+        buttonGenerateKey.setOnClickListener {
+            val licenseId = inputAdminLicense.text?.toString().orEmpty().trim()
+            val isValid = LICENSE_ID.matches(licenseId.uppercase())
+            layoutAdminLicense.error = if (isValid) null else getString(R.string.error_license_id)
+            rowGeneratedKey.visibility = if (isValid) View.VISIBLE else View.GONE
+            if (isValid) textGeneratedKey.text = AppGate.licenseKeys.keyFor(licenseId)
+        }
+        buttonCopyKey.setOnClickListener { copyToClipboard(textGeneratedKey.text) }
+    }
+
     override fun onResume() {
         super.onResume()
         refreshPermissions()
     }
 
     private fun showConfig(config: TaskConfig) = with(binding) {
-        inputCommand.setText(config.command)
         inputIntervalMinutes.setText((config.intervalSec / 60).toString())
         inputIntervalSeconds.setText((config.intervalSec % 60).toString())
-        inputDurationHours.setText((config.durationSec / 3600).toString())
-        inputDurationMinutes.setText((config.durationSec % 3600 / 60).toString())
+        inputDurationHours.setText((config.workDurationSec / 3600).toString())
+        inputDurationMinutes.setText((config.workDurationSec % 3600 / 60).toString())
+        inputRestHours.setText((config.restDurationSec / 3600).toString())
+        inputRestMinutes.setText((config.restDurationSec % 3600 / 60).toString())
         inputJitterMin.setText(config.jitterMinSec.toString())
         inputJitterMax.setText(config.jitterMaxSec.toString())
         inputKeywords.setText(config.popupKeywords.joinToString(", "))
         inputTarget.setText(config.targetPackage)
+        inputRoom.setText(config.targetRoom)
+        checkRestrictRoom.isChecked = config.restrictToRoom
+        switchReactive.isChecked = config.reactive.enabled
+        inputTriggers.setText(config.reactive.triggers.joinToString("\n"))
+        inputReaction.setText(config.reactive.command)
+        checkRestrictReactive.isChecked = config.reactive.restrictToRoom
+        inputReactiveRoom.setText(config.reactive.room)
         switchSkipLists.isChecked = config.skipListItems
         switchKeepScreen.isChecked = config.keepScreenOn
     }
 
     private fun readConfig() = with(binding) {
         TaskConfig(
-            command = inputCommand.text?.toString().orEmpty().trim(),
+            commands = commandEditor.read(),
             intervalSec = seconds(
                 inputIntervalMinutes.intValue() * 60L + inputIntervalSeconds.intValue(),
             ),
-            durationSec = seconds(
+            workDurationSec = seconds(
                 inputDurationHours.intValue() * 3600L + inputDurationMinutes.intValue() * 60L,
+            ),
+            restDurationSec = seconds(
+                inputRestHours.intValue() * 3600L + inputRestMinutes.intValue() * 60L,
             ),
             jitterMinSec = inputJitterMin.intValue(),
             jitterMaxSec = inputJitterMax.intValue(),
             popupKeywords = TaskConfig.parseKeywords(inputKeywords.text?.toString().orEmpty()),
             targetPackage = inputTarget.text?.toString().orEmpty().trim(),
+            targetRoom = inputRoom.text?.toString().orEmpty().trim(),
+            restrictToRoom = checkRestrictRoom.isChecked,
+            reactive = ReactiveConfig(
+                enabled = switchReactive.isChecked,
+                triggers = TaskConfig.parseKeywords(inputTriggers.text?.toString().orEmpty()),
+                command = inputReaction.text?.toString().orEmpty().trim(),
+                restrictToRoom = checkRestrictReactive.isChecked,
+                room = inputReactiveRoom.text?.toString().orEmpty().trim(),
+            ),
             skipListItems = switchSkipLists.isChecked,
             keepScreenOn = switchKeepScreen.isChecked,
         )
@@ -106,21 +184,42 @@ class MainActivity : AppCompatActivity() {
         fun message(vararg matching: ConfigError): String? =
             errors.firstOrNull { it in matching }?.let { getString(messageFor(it)) }
 
-        layoutCommand.error = message(ConfigError.EMPTY_COMMAND, ConfigError.COMMAND_TOO_LONG)
+        commandEditor.showBlankError(message(ConfigError.EMPTY_COMMAND))
+        val listError = message(
+            ConfigError.COMMAND_TOO_LONG,
+            ConfigError.TOO_MANY_COMMANDS,
+            ConfigError.BAD_COMMAND_DELAY,
+            ConfigError.SEQUENCE_TOO_LONG,
+        )
+        textCommandsError.text = listError
+        textCommandsError.visibility = if (listError == null) View.GONE else View.VISIBLE
         layoutIntervalMinutes.error = message(ConfigError.INTERVAL_TOO_SHORT)
         layoutDurationHours.error = message(ConfigError.DURATION_TOO_SHORT)
         layoutJitterMin.error = message(ConfigError.JITTER_RANGE, ConfigError.JITTER_TOO_LARGE)
         layoutTarget.error = message(ConfigError.BAD_PACKAGE)
+        layoutRoom.error = message(ConfigError.ROOM_TOO_LONG, ConfigError.ROOM_REQUIRED)
+        layoutTriggers.error = message(ConfigError.REACTIVE_NO_TRIGGER)
+        layoutReaction.error = message(ConfigError.REACTIVE_NO_COMMAND)
+        layoutReactiveRoom.error = message(ConfigError.REACTIVE_ROOM_REQUIRED)
+        val inReactive = errors.none { it in TASK1_ERRORS } && errors.any { it in REACTIVE_ERRORS }
+        if (errors.isNotEmpty()) tabsTask.getTabAt(if (inReactive) 1 else 0)?.select()
     }
 
     private fun messageFor(error: ConfigError): Int = when (error) {
         ConfigError.EMPTY_COMMAND -> R.string.error_empty_command
         ConfigError.COMMAND_TOO_LONG -> R.string.error_command_too_long
+        ConfigError.TOO_MANY_COMMANDS -> R.string.error_too_many_commands
+        ConfigError.BAD_COMMAND_DELAY -> R.string.error_bad_command_delay
+        ConfigError.SEQUENCE_TOO_LONG -> R.string.error_sequence_too_long
         ConfigError.INTERVAL_TOO_SHORT -> R.string.error_interval_too_short
         ConfigError.DURATION_TOO_SHORT -> R.string.error_duration_too_short
         ConfigError.JITTER_RANGE -> R.string.error_jitter_range
         ConfigError.JITTER_TOO_LARGE -> R.string.error_jitter_too_large
         ConfigError.BAD_PACKAGE -> R.string.error_bad_package
+        ConfigError.ROOM_TOO_LONG -> R.string.error_room_too_long
+        ConfigError.ROOM_REQUIRED, ConfigError.REACTIVE_ROOM_REQUIRED -> R.string.error_room_required
+        ConfigError.REACTIVE_NO_TRIGGER -> R.string.error_no_trigger
+        ConfigError.REACTIVE_NO_COMMAND -> R.string.error_no_reaction
     }
 
     private fun launchOverlay() {
@@ -173,5 +272,17 @@ class MainActivity : AppCompatActivity() {
                 Uri.parse("package:$packageName"),
             ),
         )
+    }
+
+    private companion object {
+        const val STATE_COMMANDS = "commands"
+        const val STATE_TAB = "tab"
+        val LICENSE_ID = Regex("[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}")
+        val REACTIVE_ERRORS = setOf(
+            ConfigError.REACTIVE_NO_TRIGGER,
+            ConfigError.REACTIVE_NO_COMMAND,
+            ConfigError.REACTIVE_ROOM_REQUIRED,
+        )
+        val TASK1_ERRORS = ConfigError.entries.toSet() - REACTIVE_ERRORS - ConfigError.BAD_PACKAGE
     }
 }

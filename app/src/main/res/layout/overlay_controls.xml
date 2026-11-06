@@ -65,5 +65,21 @@
             android:layout_height="@dimen/overlay_button_size"
             android:contentDescription="@string/overlay_stop"
             app:icon="@drawable/ic_stop" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonSize"
+            style="@style/Widget.AutoClicker.OverlayButton"
+            android:layout_width="@dimen/overlay_button_size"
+            android:layout_height="@dimen/overlay_button_size"
+            android:contentDescription="@string/overlay_size"
+            app:icon="@drawable/ic_resize" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonShrink"
+            style="@style/Widget.AutoClicker.OverlayButton"
+            android:layout_width="@dimen/overlay_button_size"
+            android:layout_height="@dimen/overlay_button_size"
+            android:contentDescription="@string/overlay_shrink"
+            app:icon="@drawable/ic_shrink" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

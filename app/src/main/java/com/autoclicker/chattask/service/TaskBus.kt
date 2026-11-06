@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-enum class TaskPhase { IDLE, RUNNING, PAUSED }
+enum class TaskPhase { IDLE, RUNNING, RESTING, PAUSED }
 
 data class TaskStatus(
     val phase: TaskPhase = TaskPhase.IDLE,
@@ -16,6 +16,8 @@ data class TaskStatus(
     val sent: Int = 0,
     val failed: Int = 0,
     val popups: Int = 0,
+    val workCycle: Int = 1,
+    val reactions: Int = 0,
     val keepScreenOn: Boolean = false,
     /** Message for the overlay, or 0 for none. */
     @StringRes val notice: Int = 0,

@@ -16,14 +16,13 @@
     <string name="permission_missing">Not granted</string>
     <string name="permission_action">Grant</string>
 
-    <string name="label_command">Command</string>
     <string name="label_interval_minutes">Interval (min)</string>
     <string name="label_interval_seconds">Interval (sec)</string>
-    <string name="label_duration_hours">Run for (hours)</string>
-    <string name="label_duration_minutes">Run for (min)</string>
+    <string name="label_duration_hours">Work (hours)</string>
+    <string name="label_duration_minutes">Work (min)</string>
     <string name="label_jitter_min">Jitter min (sec)</string>
     <string name="label_jitter_max">Jitter max (sec)</string>
-    <string name="label_target">Target app package (optional)</string>
+    <string name="label_target">Target app package</string>
     <string name="helper_target">Leave empty to use the app on screen when you press Start.</string>
     <string name="label_keywords">Dismiss buttons labelled</string>
     <string name="helper_keywords">Separate with commas. Matches whole words on short button labels.</string>
@@ -42,7 +41,7 @@
 
     <string name="overlay_ready">Ready</string>
     <string name="overlay_paused">Paused</string>
-    <string name="overlay_detail">Left %1$s · ✓%2$d ✗%3$d · ⨯%4$d</string>
+    <string name="overlay_detail">Left %1$s · ✓%2$d ✗%3$d · ⨯%4$d · #%5$d · ⚡%6$d</string>
     <string name="overlay_drag">Drag to move</string>
     <string name="overlay_start">Start or resume</string>
     <string name="overlay_pause">Pause</string>
@@ -63,4 +62,69 @@
     <string name="notification_running">Session running</string>
     <string name="notification_paused">Session paused</string>
     <string name="notification_exit">Stop and close</string>
+
+    <string name="language_switch_label" translatable="false">العربية</string>
+    <string name="language_switch_description">Switch language</string>
+
+    <string name="activation_title">Activate the app</string>
+    <string name="activation_message">Send your License ID to the provider, then enter the activation key you receive.</string>
+    <string name="label_passcode">Activation key</string>
+    <string name="button_activate">Activate</string>
+    <string name="error_passcode_empty">Enter the activation key.</string>
+    <string name="error_passcode_wrong">Invalid activation key. Try again.</string>
+    <string name="error_tampered">This copy of the app has been modified and cannot run.</string>
+
+    <string name="label_command_numbered">Command %1$d</string>
+    <string name="button_add_command">+ Add Command</string>
+    <string name="button_remove_command">Remove command</string>
+    <string name="mode_simultaneous">Send simultaneously</string>
+    <string name="mode_delay">Delay after previous</string>
+    <string name="label_delay_seconds">Delay (seconds)</string>
+
+    <string name="label_rest_hours">Rest (hours)</string>
+    <string name="label_rest_minutes">Rest (min)</string>
+    <string name="helper_rest">After a rest the target app reopens and work restarts. Set rest to 0 to stop after one work period.</string>
+    <string name="button_pick_app">Choose</string>
+    <string name="picker_title">Choose the target app</string>
+    <string name="label_room">Target Room Identifier / اسم أو رقم الغرفة</string>
+    <string name="helper_room">Saved on this device only. Enter the room name or number exactly as the app shows it, such as 41110.</string>
+
+    <string name="error_too_many_commands">Use at most 5 commands.</string>
+    <string name="error_bad_command_delay">Enter a delay from 1 to 3600 seconds.</string>
+    <string name="error_sequence_too_long">The delays must fit inside the interval, less the jitter and 5 seconds.</string>
+    <string name="error_room_too_long">The room identifier is too long.</string>
+
+    <string name="overlay_resting">Rest %1$s</string>
+    <string name="notification_resting">Resting</string>
+    <string name="notice_locked">Activate the app first</string>
+    <string name="notice_recovering">Reopening the chat app</string>
+    <string name="notice_not_launchable">Could not open the target app</string>
+    <string name="notice_no_chat">Chat screen not found</string>
+    <string name="notice_room_not_found">Room not found in My Channels</string>
+
+    <string name="tab_task1">Task 1 (Primary Periodic)</string>
+    <string name="tab_task2">YOUSE 2 (Reactive / Secondary Event)</string>
+    <string name="section_shared">Shared settings</string>
+    <string name="label_reactive_enabled">Enable YOUSE 2</string>
+    <string name="helper_reactive">Runs alongside Task 1 during a session, including rest periods, and only while the chat is on screen.</string>
+    <string name="label_triggers">Trigger phrases</string>
+    <string name="helper_keywords_reactive">One per line, or separated by commas.</string>
+    <string name="label_reaction_command">Reaction command</string>
+    <string name="label_restrict_room">Restrict execution strictly to this room / تقييد الإرسال بهذه الغرفة فقط</string>
+    <string name="helper_restrict_room">Commands are sent only while the chat header shows this identifier. If the header shows the room name, enter the name here rather than the number.</string>
+    <string name="label_license_id">License ID / رمز الترخيص</string>
+    <string name="license_privacy">This ID is a one-way code made from your device ID. It reveals no personal data and is never sent anywhere by the app.</string>
+    <string name="button_copy">Copy</string>
+    <string name="toast_copied">Copied</string>
+    <string name="section_admin">Admin Key Generator / مولد مفاتيح التفعيل</string>
+    <string name="button_generate_key">Generate activation key</string>
+    <string name="error_license_id">Enter a License ID such as AB12-CD34-EF56.</string>
+    <string name="error_room_required">Enter the room to restrict to.</string>
+    <string name="error_no_trigger">Enter at least one trigger phrase.</string>
+    <string name="error_no_reaction">Enter the reaction command.</string>
+    <string name="overlay_shrink">Shrink to a badge</string>
+    <string name="overlay_size">Change size</string>
+    <string name="notice_wrong_room">Skipped: not in the target room</string>
+    <string name="notice_reaction_failed">YOUSE 2: reaction not sent</string>
+    <string name="notice_engine_error">An error was handled, still running</string>
 </resources>

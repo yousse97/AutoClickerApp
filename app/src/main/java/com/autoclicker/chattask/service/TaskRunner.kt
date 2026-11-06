@@ -3,6 +3,7 @@ package com.autoclicker.chattask.service
 import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.ScheduleOffsets
 import com.autoclicker.chattask.core.SessionSchedule
+import com.autoclicker.chattask.core.WorkRestScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -20,6 +21,8 @@ data class RunnerView(
     val sessionLeftMs: Long,
     val sent: Int,
     val failed: Int,
+    val resting: Boolean = false,
+    val workCycle: Int = 1,
 )
 
 /**
@@ -43,12 +46,18 @@ class TaskRunner(
         /** The plan or counters changed, so this is the moment to persist. */
         fun onPlanChanged()
 
+        /** Work is starting again, so the target app should be brought back. */
+        fun onRestFinished() = Unit
+
         fun onFinished(view: RunnerView)
     }
 
     private var job: Job? = null
     private var schedule: SessionSchedule? = null
     private var jitter = JitterPolicy(0, 0)
+    private var cycles: WorkRestScheduler? = null
+    private var resting = false
+    private var workCycle = 1
     private var pausedAtMs: Long? = null
     private var actionInFlight = false
     private var sent = 0
@@ -62,13 +71,19 @@ class TaskRunner(
     fun start(
         plan: SessionSchedule,
         jitterPolicy: JitterPolicy,
+        workRest: WorkRestScheduler? = null,
         sentSoFar: Int = 0,
         failedSoFar: Int = 0,
         paused: Boolean = false,
+        isResting: Boolean = false,
+        workCycleSoFar: Int = 1,
     ) {
         job?.cancel()
         schedule = plan
         jitter = jitterPolicy
+        cycles = workRest
+        resting = isResting
+        workCycle = workCycleSoFar
         sent = sentSoFar
         failed = failedSoFar
         if (paused) {
@@ -76,7 +91,7 @@ class TaskRunner(
             phase = TaskPhase.PAUSED
         } else {
             pausedAtMs = null
-            phase = TaskPhase.RUNNING
+            phase = activePhase()
             launchLoop()
         }
         listener.onPlanChanged()
@@ -84,7 +99,7 @@ class TaskRunner(
     }
 
     fun pause() {
-        if (phase != TaskPhase.RUNNING) return
+        if (phase != TaskPhase.RUNNING && phase != TaskPhase.RESTING) return
         job?.cancel()
         pausedAtMs = clock()
         phase = TaskPhase.PAUSED
@@ -97,7 +112,7 @@ class TaskRunner(
         val pausedAt = pausedAtMs ?: return
         schedule = schedule?.shiftedBy(clock() - pausedAt)
         pausedAtMs = null
-        phase = TaskPhase.RUNNING
+        phase = activePhase()
         launchLoop()
         listener.onPlanChanged()
         listener.onTick(view())
@@ -107,6 +122,8 @@ class TaskRunner(
         job?.cancel()
         job = null
         schedule = null
+        cycles = null
+        resting = false
         pausedAtMs = null
         phase = TaskPhase.IDLE
     }
@@ -120,6 +137,8 @@ class TaskRunner(
             sessionLeftMs = plan?.let { max(0, it.endMs - now) } ?: 0,
             sent = sent,
             failed = failed,
+            resting = resting,
+            workCycle = workCycle,
         )
     }
 
@@ -130,13 +149,11 @@ class TaskRunner(
             while (isActive) {
                 val plan = schedule ?: return@launch
                 val now = clock()
-                if (plan.isFinished(now)) {
-                    val finalView = view()
-                    stop()
-                    listener.onFinished(finalView)
-                    return@launch
+                if (plan.isFinished(now) && !actionInFlight) {
+                    if (!beginNextPeriod(plan, now)) return@launch
+                    continue
                 }
-                if (plan.isDue(now) && !actionInFlight) {
+                if (!resting && plan.isDue(now) && !actionInFlight) {
                     runCycle()
                     continue
                 }
@@ -146,6 +163,35 @@ class TaskRunner(
             }
         }
     }
+
+    /** Moves between work and rest. Returns false when the session is over. */
+    private fun beginNextPeriod(plan: SessionSchedule, now: Long): Boolean {
+        val workRest = cycles?.takeIf { it.loops }
+        when {
+            workRest == null -> {
+                val finalView = view()
+                stop()
+                listener.onFinished(finalView)
+                return false
+            }
+            resting -> {
+                resting = false
+                workCycle++
+                schedule = workRest.workPlan(now)
+                listener.onRestFinished()
+            }
+            else -> {
+                resting = true
+                schedule = workRest.restPlan(plan)
+            }
+        }
+        phase = activePhase()
+        listener.onPlanChanged()
+        listener.onTick(view())
+        return true
+    }
+
+    private fun activePhase() = if (resting) TaskPhase.RESTING else TaskPhase.RUNNING
 
     /** Runs to completion even if paused midway, so a message is never left half typed. */
     private suspend fun runCycle() {

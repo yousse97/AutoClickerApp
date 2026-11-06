@@ -2,6 +2,7 @@ package com.autoclicker.chattask.service
 
 import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.SessionSchedule
+import com.autoclicker.chattask.core.WorkRestScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -20,6 +21,11 @@ class TaskRunnerTest {
     private class Recorder : TaskRunner.Listener {
         var finished: RunnerView? = null
         var plansSaved = 0
+        var restsFinished = 0
+
+        override fun onRestFinished() {
+            restsFinished++
+        }
 
         override fun onTick(view: RunnerView) = Unit
 
@@ -47,6 +53,115 @@ class TaskRunnerTest {
         SessionSchedule.create(currentTime, 3_000, interval, durationMs)
 
     private val noJitter = JitterPolicy(0, 0)
+
+    private val workRest = WorkRestScheduler(
+        workMs = 200_000,
+        restMs = 100_000,
+        intervalMs = interval,
+        firstDelayMs = 3_000,
+    )
+
+    private fun TestScope.startCycles(runner: TaskRunner) =
+        runner.start(workRest.workPlan(currentTime), noJitter, workRest)
+
+    @Test
+    fun `work, rest and work repeat with no sends during rest`() = runTest {
+        var sends = 0
+        val runner = runner(backgroundScope) { sends++; true }
+        startCycles(runner)
+
+        advanceTimeBy(201_000)
+        runCurrent()
+        assertEquals(TaskPhase.RESTING, runner.phase)
+        assertEquals(4, sends)
+
+        advanceTimeBy(90_000)
+        runCurrent()
+        assertEquals(TaskPhase.RESTING, runner.phase)
+        assertEquals(4, sends)
+        assertEquals(0, recorder.restsFinished)
+
+        advanceTimeBy(15_000)
+        runCurrent()
+        assertEquals(TaskPhase.RUNNING, runner.phase)
+        assertEquals(1, recorder.restsFinished)
+        assertEquals(2, runner.view().workCycle)
+        assertEquals(5, sends)
+        assertEquals(null, recorder.finished)
+
+        advanceTimeBy(600_000)
+        runCurrent()
+        assertTrue(runner.view().workCycle >= 3)
+        assertEquals(null, recorder.finished)
+    }
+
+    @Test
+    fun `pausing during rest extends it and resume returns to rest`() = runTest {
+        var sends = 0
+        val runner = runner(backgroundScope) { sends++; true }
+        startCycles(runner)
+        advanceTimeBy(210_000)
+        runCurrent()
+        assertEquals(TaskPhase.RESTING, runner.phase)
+
+        runner.pause()
+        assertEquals(TaskPhase.PAUSED, runner.phase)
+        advanceTimeBy(500_000)
+        runCurrent()
+        assertEquals(0, recorder.restsFinished)
+
+        runner.resume()
+        assertEquals(TaskPhase.RESTING, runner.phase)
+        advanceTimeBy(91_000)
+        runCurrent()
+        assertEquals(TaskPhase.RUNNING, runner.phase)
+        assertEquals(1, recorder.restsFinished)
+    }
+
+    @Test
+    fun `a session restored during rest finishes that rest`() = runTest {
+        var sends = 0
+        val runner = runner(backgroundScope) { sends++; true }
+        val rest = workRest.restPlan(workRest.workPlan(currentTime - 200_000))
+        runner.start(rest, noJitter, workRest, sentSoFar = 7, isResting = true, workCycleSoFar = 3)
+
+        assertEquals(TaskPhase.RESTING, runner.phase)
+        advanceTimeBy(101_000)
+        runCurrent()
+
+        assertEquals(TaskPhase.RUNNING, runner.phase)
+        assertEquals(4, runner.view().workCycle)
+        assertEquals(7, runner.view().sent)
+    }
+
+    @Test
+    fun `a rest that ended while the process was gone starts work at once`() = runTest {
+        val runner = runner(backgroundScope) { true }
+        val rest = workRest.restPlan(workRest.workPlan(currentTime - 900_000))
+        runner.start(rest, noJitter, workRest, isResting = true)
+        runCurrent()
+
+        assertEquals(TaskPhase.RUNNING, runner.phase)
+        assertEquals(1, recorder.restsFinished)
+    }
+
+    @Test
+    fun `stop during rest ends the session`() = runTest {
+        var sends = 0
+        val runner = runner(backgroundScope) { sends++; true }
+        startCycles(runner)
+        advanceTimeBy(210_000)
+        runCurrent()
+        val before = sends
+
+        runner.stop()
+        advanceTimeBy(1_000_000)
+        runCurrent()
+
+        assertEquals(TaskPhase.IDLE, runner.phase)
+        assertEquals(before, sends)
+        assertEquals(0, recorder.restsFinished)
+    }
 
     @Test
     fun `sends on schedule and finishes at the session limit`() = runTest {

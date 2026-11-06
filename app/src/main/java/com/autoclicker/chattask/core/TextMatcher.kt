@@ -30,7 +30,7 @@ object TextNormalizer {
  * sentence may contain a keyword. A real button label is short and holds the word on its own.
  */
 class KeywordSet(keywords: List<String>, private val maxLabelLength: Int = 24) {
-    val raw: List<String> = keywords.filter { it.isNotBlank() }
+    val raw: List<String> = keywords.filter { it.isNotBlank() }.distinctBy(TextNormalizer::normalize)
     private val normalized = raw.map { TextNormalizer.normalize(it) }.filter { it.isNotEmpty() }
 
     fun matches(label: CharSequence?): Boolean {
@@ -44,6 +44,40 @@ class KeywordSet(keywords: List<String>, private val maxLabelLength: Int = 24) {
 
     private companion object {
         val NON_WORD = Regex("[^\\p{L}\\p{Nd}]+")
+    }
+}
+
+/** Recognises a chat message box, including custom views that are not marked editable. */
+object InputMatcher {
+    private const val MAX_HINT_LENGTH = 40
+    private val HINTS = listOf("رسالتك", "type a message").map(TextNormalizer::normalize)
+
+    fun isMessageBox(className: CharSequence?, editable: Boolean, hint: CharSequence?, text: CharSequence?): Boolean =
+        editable || className?.contains("EditText") == true || isHint(hint) || isHint(text)
+
+    /** The length limit keeps a chat message that quotes the hint from counting as one. */
+    fun isHint(label: CharSequence?): Boolean {
+        if (label.isNullOrBlank() || label.length > MAX_HINT_LENGTH) return false
+        val normalized = TextNormalizer.normalize(label)
+        return HINTS.any { it in normalized }
+    }
+}
+
+/** Finds a room label: "41110" matches "Room 41110" but not "141110". */
+object RoomMatcher {
+    fun matches(label: CharSequence?, room: String): Boolean {
+        if (label.isNullOrBlank()) return false
+        val wanted = TextNormalizer.normalize(room)
+        if (wanted.isEmpty()) return false
+        val text = TextNormalizer.normalize(label)
+        var index = text.indexOf(wanted)
+        while (index >= 0) {
+            val before = text.getOrNull(index - 1)
+            val after = text.getOrNull(index + wanted.length)
+            if (before?.isLetterOrDigit() != true && after?.isLetterOrDigit() != true) return true
+            index = text.indexOf(wanted, index + 1)
+        }
+        return false
     }
 }
 

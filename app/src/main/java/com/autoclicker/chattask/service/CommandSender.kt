@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction
+import com.autoclicker.chattask.core.InputMatcher
 import com.autoclicker.chattask.core.KeywordSet
 import com.autoclicker.chattask.core.ViewIdMatcher
 import kotlinx.coroutines.delay
@@ -20,7 +21,15 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.random.Random
 
-enum class SendResult { SENT, SCREEN_LOCKED, TARGET_NOT_VISIBLE, NO_INPUT, TYPE_FAILED, NOT_CONFIRMED }
+enum class SendResult {
+    SENT,
+    SCREEN_LOCKED,
+    TARGET_NOT_VISIBLE,
+    WRONG_ROOM,
+    NO_INPUT,
+    TYPE_FAILED,
+    NOT_CONFIRMED,
+}
 
 /**
  * Types a command into the chat box and presses send.
@@ -46,14 +55,13 @@ class CommandSender(private val service: AccessibilityService) {
         SendResult.NOT_CONFIRMED
     }
 
-    /** The bottom-most editable field, which is where chat apps put their message box. */
+    /** The bottom-most message box, which is where chat apps put it. */
     fun findInput(target: String): AccessibilityNodeInfo? {
         var best: AccessibilityNodeInfo? = null
         var bestBottom = Int.MIN_VALUE
         for (root in NodeTools.targetRoots(service, target)) {
             NodeTools.walk(root) { node ->
-                val usable = node.isEditable && node.isVisibleToUser && node.isEnabled && !node.isPassword
-                if (usable) {
+                if (isUsableInput(node)) {
                     val bottom = NodeTools.boundsOf(node).bottom
                     if (bottom > bestBottom) {
                         best = node
@@ -63,6 +71,13 @@ class CommandSender(private val service: AccessibilityService) {
             }
         }
         return best
+    }
+
+    private fun isUsableInput(node: AccessibilityNodeInfo): Boolean {
+        if (!node.isVisibleToUser || !node.isEnabled || node.isPassword) return false
+        val matches = InputMatcher.isMessageBox(node.className, node.isEditable, node.hintText, node.text)
+        // Only a real field is trusted inside a list, where a short message may repeat the hint.
+        return matches && (node.isEditable || !NodeTools.isInsideList(node))
     }
 
     private fun isDeviceReady(): Boolean {
@@ -76,8 +91,11 @@ class CommandSender(private val service: AccessibilityService) {
         input: AccessibilityNodeInfo,
         command: String,
     ): Boolean {
-        input.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
-        input.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        if (!input.isFocused) {
+            input.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+            NodeTools.click(service, input)
+            poll(FOCUS_TIMEOUT_MS) { findInput(target)?.isEditable == true }
+        }
         humanPause()
         // Focusing can rebuild the layout, so the earlier node may already be stale.
         val field = findInput(target) ?: input
@@ -113,7 +131,7 @@ class CommandSender(private val service: AccessibilityService) {
     private fun fieldText(field: AccessibilityNodeInfo): String {
         if (field.isShowingHintText) return ""
         val text = field.text?.toString().orEmpty()
-        return if (text == field.hintText?.toString()) "" else text
+        return if (text == field.hintText?.toString() || InputMatcher.isHint(text)) "" else text
     }
 
     private suspend fun awaitText(target: String, command: String): Boolean = poll(TEXT_TIMEOUT_MS) {
@@ -229,6 +247,7 @@ class CommandSender(private val service: AccessibilityService) {
     private companion object {
         const val POLL_MS = 100L
         const val TEXT_TIMEOUT_MS = 800L
+        const val FOCUS_TIMEOUT_MS = 800L
         const val BUTTON_TIMEOUT_MS = 1_500L
         const val CLEAR_TIMEOUT_MS = 1_500L
         const val HUMAN_PAUSE_MIN_MS = 120L
