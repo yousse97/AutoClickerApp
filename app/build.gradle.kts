@@ -1,16 +1,7 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
-
-// The license secret stays out of git. It must not change, or existing keys stop working.
-val localProperties = Properties().apply {
-    rootProject.file("local.properties").takeIf { it.exists() }?.reader()?.use(::load)
-}
-val licenseKey: String = localProperties.getProperty("license.hmacKey")
-    ?: error("Add license.hmacKey to local.properties")
 
 android {
     namespace = "com.autoclicker.chattask"
@@ -20,11 +11,9 @@ android {
         applicationId = "com.autoclicker.chattask"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
-        val signer = providers.gradleProperty("app.signerSha256").get()
-        buildConfigField("String", "SIGNER_SHA256", "\"$signer\"")
-        buildConfigField("String", "LICENSE_HMAC_KEY", "\"$licenseKey\"")
+        // The name is lower than the earlier 1.1.0, so the code must keep rising for updates.
+        versionCode = 3
+        versionName = "1.0.1"
     }
 
     buildTypes {
@@ -52,7 +41,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
     }
 }
 

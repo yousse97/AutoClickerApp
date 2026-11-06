@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">النقر التلقائي</string>
     <string name="accessibility_service_label">خدمة مهام النقر التلقائي</string>
-    <string name="accessibility_service_description">تكتب الأمر الذي تختاره في تطبيق الدردشة الذي تبدأ فيه الجلسة وتغلق النوافذ المنبثقة فيه. تعمل داخل هذا التطبيق فقط وأثناء جلسة تبدأها أنت، ولا ترسل أي شيء خارج هذا الجهاز.</string>
+    <string name="accessibility_service_description">تقرأ شاشة WOLF وتنفذ الأوامر داخله فقط، أثناء جلسة تبدأها أنت. لا تُحفظ نصوص المحادثات ولا يُرسل أي شيء إلى الإنترنت.</string>
 
     <string name="section_permissions">الأذونات</string>
     <string name="section_task">المهمة</string>
@@ -22,8 +22,6 @@
     <string name="label_duration_minutes">العمل (دقائق)</string>
     <string name="label_jitter_min">أقل تفاوت (ثانية)</string>
     <string name="label_jitter_max">أقصى تفاوت (ثانية)</string>
-    <string name="label_target">حزمة التطبيق المستهدف</string>
-    <string name="helper_target">اتركه فارغًا لاستخدام التطبيق الظاهر على الشاشة عند الضغط على بدء.</string>
     <string name="label_keywords">إغلاق الأزرار المسماة</string>
     <string name="helper_keywords">افصل بينها بفواصل. تتم مطابقة الكلمات الكاملة في تسميات الأزرار القصيرة.</string>
     <string name="label_skip_lists">تجاهل الأزرار داخل قوائم الدردشة</string>
@@ -31,13 +29,12 @@
     <string name="button_launch">حفظ وإظهار أدوات التحكم</string>
     <string name="toast_permissions_needed">امنح إذني إمكانية الوصول والظهور فوق التطبيقات أولًا.</string>
 
-    <string name="error_empty_command">أدخل أمرًا.</string>
+    <string name="error_empty_command">أدخل أمرك.</string>
     <string name="error_command_too_long">الأمر طويل جدًا.</string>
     <string name="error_interval_too_short">استخدم فاصلًا لا يقل عن 10 ثوانٍ.</string>
     <string name="error_duration_too_short">يجب ألا يقل عن فاصل واحد.</string>
     <string name="error_jitter_range">يجب ألا يتجاوز الحد الأدنى الحد الأقصى.</string>
     <string name="error_jitter_too_large">يجب أن يقل أقصى تفاوت عن الفاصل بما لا يقل عن 5 ثوانٍ.</string>
-    <string name="error_bad_package">أدخل اسم حزمة مثل com.example.chat.</string>
 
     <string name="overlay_ready">جاهز</string>
     <string name="overlay_paused">متوقف مؤقتًا</string>
@@ -47,12 +44,12 @@
     <string name="overlay_pause">إيقاف مؤقت</string>
     <string name="overlay_stop">إيقاف، أو إغلاق أدوات التحكم عند التوقف</string>
 
-    <string name="notice_open_chat">افتح الدردشة أولًا</string>
+    <string name="notice_open_chat">افتح قناة في WOLF أولًا</string>
     <string name="notice_enable_service">فعّل خدمة إمكانية الوصول</string>
     <string name="notice_invalid_settings">راجع الإعدادات في التطبيق</string>
     <string name="notice_finished">انتهت الجلسة</string>
-    <string name="notice_screen_locked">تم التخطي: الشاشة مطفأة أو مقفلة</string>
-    <string name="notice_target_hidden">تم التخطي: تطبيق الدردشة غير ظاهر</string>
+    <string name="notice_screen_locked">في الانتظار: الشاشة مطفأة أو مقفلة</string>
+    <string name="notice_target_hidden">في الانتظار: WOLF غير ظاهر</string>
     <string name="notice_no_input">تم التخطي: لم يتم العثور على مربع الرسالة</string>
     <string name="notice_type_failed">فشل: تعذر إدخال النص</string>
     <string name="notice_not_confirmed">فشل: لم يتم تأكيد الإرسال</string>
@@ -66,13 +63,6 @@
     <string name="language_switch_label" translatable="false">English</string>
     <string name="language_switch_description">تغيير اللغة</string>
 
-    <string name="activation_title">تفعيل التطبيق</string>
-    <string name="activation_message">أرسل رمز الترخيص إلى المزوّد، ثم أدخل مفتاح التفعيل الذي تستلمه.</string>
-    <string name="label_passcode">مفتاح التفعيل</string>
-    <string name="button_activate">تفعيل</string>
-    <string name="error_passcode_empty">أدخل مفتاح التفعيل.</string>
-    <string name="error_passcode_wrong">مفتاح التفعيل غير صحيح. حاول مرة أخرى.</string>
-    <string name="error_tampered">تم تعديل هذه النسخة من التطبيق ولا يمكن تشغيلها.</string>
 
     <string name="label_command_numbered">الأمر %1$d</string>
     <string name="button_add_command">+ إضافة أمر</string>
@@ -83,11 +73,9 @@
 
     <string name="label_rest_hours">الراحة (ساعات)</string>
     <string name="label_rest_minutes">الراحة (دقائق)</string>
-    <string name="helper_rest">بعد الراحة يُعاد فتح التطبيق المستهدف ويبدأ العمل من جديد. اجعل الراحة 0 للتوقف بعد فترة عمل واحدة.</string>
-    <string name="button_pick_app">اختيار</string>
-    <string name="picker_title">اختر التطبيق المستهدف</string>
-    <string name="label_room">اسم أو رقم الغرفة</string>
-    <string name="helper_room">يُحفظ على هذا الجهاز فقط. أدخل اسم الغرفة أو رقمها تمامًا كما يظهر في التطبيق، مثل 41110.</string>
+    <string name="helper_rest">بعد الراحة تستمر الجلسة في WOLF. اجعل الراحة 0 للتوقف بعد فترة عمل واحدة.</string>
+    <string name="label_room">اسم أو رقم القناة</string>
+    <string name="helper_room">يُحفظ على هذا الجهاز فقط. أدخل اسم القناة أو رقمها تمامًا كما يظهر في حسابك في WOLF. تختلف القنوات من حساب إلى آخر.</string>
 
     <string name="error_too_many_commands">استخدم 5 أوامر كحد أقصى.</string>
     <string name="error_bad_command_delay">أدخل تأخيرًا من 1 إلى 3600 ثانية.</string>
@@ -96,11 +84,10 @@
 
     <string name="overlay_resting">راحة %1$s</string>
     <string name="notification_resting">في فترة راحة</string>
-    <string name="notice_locked">فعّل التطبيق أولًا</string>
     <string name="notice_recovering">جارٍ إعادة فتح تطبيق الدردشة</string>
     <string name="notice_not_launchable">تعذر فتح التطبيق المستهدف</string>
     <string name="notice_no_chat">لم يتم العثور على شاشة الدردشة</string>
-    <string name="notice_room_not_found">لم يتم العثور على الغرفة في قنواتي الخاصة</string>
+    <string name="notice_room_not_found">لم يتم العثور على القناة في هذا الحساب</string>
 
     <string name="tab_task1">المهمة 1 (الدورية الأساسية)</string>
     <string name="tab_task2">YOUSE 2 (التفاعلية / الحدث الثانوي)</string>
@@ -111,20 +98,135 @@
     <string name="helper_keywords_reactive">عبارة في كل سطر، أو افصل بينها بفواصل.</string>
     <string name="label_reaction_command">أمر التفاعل</string>
     <string name="label_restrict_room">تقييد الإرسال بهذه الغرفة فقط</string>
-    <string name="helper_restrict_room">تُرسل الأوامر فقط عندما يظهر هذا المعرّف في أعلى الدردشة. إذا كان أعلى الدردشة يعرض اسم الغرفة، فأدخل الاسم هنا بدلًا من الرقم.</string>
-    <string name="label_license_id">رمز الترخيص</string>
-    <string name="license_privacy">هذا الرمز مشتق باتجاه واحد من معرّف جهازك. لا يكشف أي بيانات شخصية ولا يرسله التطبيق إلى أي مكان.</string>
-    <string name="button_copy">نسخ</string>
-    <string name="toast_copied">تم النسخ</string>
-    <string name="section_admin">مولد مفاتيح التفعيل</string>
-    <string name="button_generate_key">إنشاء مفتاح التفعيل</string>
-    <string name="error_license_id">أدخل رمز ترخيص مثل AB12-CD34-EF56.</string>
-    <string name="error_room_required">أدخل الغرفة المطلوب التقييد بها.</string>
+    <string name="helper_restrict_room">تُرسل الأوامر في هذه القناة تحديدًا فقط. عطّل هذا الخيار للإرسال في أي قناة مفتوحة في WOLF. لا تُستخدم المحادثات الخاصة أبدًا.</string>
+    <string name="error_room_required">أدخل قناتك، أو عطّل التقييد.</string>
     <string name="error_no_trigger">أدخل عبارة محفّزة واحدة على الأقل.</string>
-    <string name="error_no_reaction">أدخل أمر التفاعل.</string>
+    <string name="error_no_reaction">أدخل أمر التفاعل الخاص بك.</string>
     <string name="overlay_shrink">تصغير إلى شارة</string>
     <string name="overlay_size">تغيير الحجم</string>
     <string name="notice_wrong_room">تم التخطي: ليس في الغرفة المستهدفة</string>
     <string name="notice_reaction_failed">YOUSE 2: لم يتم إرسال التفاعل</string>
     <string name="notice_engine_error">تمت معالجة خطأ، وما زال التشغيل مستمرًا</string>
+
+    <string name="helper_keep_screen">اختياري. يُفضَّل استخدامه مع الشاحن وإضاءة منخفضة.</string>
+    <string name="button_guide">دليل الإعداد</string>
+    <string name="button_log">سجل الأحداث</string>
+    <string name="disclosure_title">قبل التفعيل</string>
+    <string name="disclosure_message">تقرأ الخدمة شاشة WOLF وتنفذ الأوامر داخله فقط.\n\nولتعرف متى تنتظر، تتحقق من اسم التطبيق الظاهر. ولا تقرأ أو تضغط أو تكتب في أي تطبيق آخر.\n\nلا يحفظ التطبيق نصوص المحادثات.\n\nلا يرسل التطبيق أي بيانات إلى الإنترنت.</string>
+    <string name="disclosure_continue">متابعة إلى الإعدادات</string>
+    <string name="notice_not_channel">في الانتظار: لم يتم تأكيد قناة WOLF</string>
+    <string name="notification_alerts_channel">تنبيهات الجلسة</string>
+    <string name="notification_stopped_title">توقف النقر التلقائي</string>
+    <string name="notification_retry">إعادة المحاولة</string>
+    <string name="alert_stopped_locked">بقيت الشاشة مطفأة أو مقفلة أكثر من 15 دقيقة. ابدأ الجلسة يدويًا من جديد.</string>
+    <string name="alert_stopped_relaunch">تعذر الوصول إلى قناتك في WOLF بعد 3 محاولات. لم يتم إرسال أي شيء.</string>
+    <string name="alert_stopped_failures">فشل الإرسال 5 مرات متتالية.</string>
+    <string name="alert_restore_failed">تعذرت استعادة الجلسة. تأكد من تفعيل خدمة إمكانية الوصول، ثم ابدأ من جديد.</string>
+    <string name="log_title">سجل الأحداث</string>
+    <string name="log_last_send">آخر إرسال: %1$s</string>
+    <string name="log_last_error">آخر خطأ: %1$s</string>
+    <string name="log_failures">الفشل المتتالي: %1$d</string>
+    <string name="log_none">لا يوجد</string>
+    <string name="log_privacy">يُحفظ على هذا الجهاز فقط. يضم السجل الأوقات وأنواع الأحداث، ولا يضم نصوص المحادثات أو محتوى الشاشة.</string>
+    <string name="event_session_started">بدأت الجلسة</string>
+    <string name="event_session_stopped">أوقفتَ الجلسة</string>
+    <string name="event_session_restored">تمت استعادة الجلسة</string>
+    <string name="event_restore_failed">فشل: لم تتم استعادة الجلسة</string>
+    <string name="event_sent">تم الإرسال، وتأكد بفراغ مربع الكتابة</string>
+    <string name="event_send_failed">فشل: لم يكتمل الإرسال</string>
+    <string name="event_held_locked">في الانتظار: الشاشة مطفأة أو مقفلة</string>
+    <string name="event_held_other_app">في الانتظار: WOLF غير ظاهر</string>
+    <string name="event_held_not_channel">لم يُرسل: لم يتم تأكيد القناة</string>
+    <string name="event_held_wrong_room">لم يُرسل: غرفة مختلفة</string>
+    <string name="event_relaunch_ok">أعيد فتح WOLF</string>
+    <string name="event_relaunch_failed">فشل: لم يُعد فتح WOLF</string>
+    <string name="event_stopped_locked">توقف: الهاتف مقفل أكثر من 15 دقيقة</string>
+    <string name="event_stopped_relaunch">توقف: فشلت 3 محاولات لإعادة الفتح</string>
+    <string name="event_stopped_failures">توقف: فشل الإرسال 5 مرات متتالية</string>
+    <string name="event_reaction_sent">YOUSE 2: تم إرسال التفاعل</string>
+    <string name="event_reaction_failed">YOUSE 2: فشل التفاعل</string>
+    <string name="guide_title">دليل الإعداد</string>
+    <string name="guide_intro">تختلف أسماء القوائم من جهاز إلى آخر، لذا قد لا تطابق الأسماء أدناه جهازك تمامًا.</string>
+    <string name="guide_restricted_title">1. السماح بالإعدادات المقيدة (أندرويد 13 وما بعده)</string>
+    <string name="guide_restricted_body">افتح شاشة معلومات التطبيق، واضغط القائمة في الزاوية العلوية، واختر السماح بالإعدادات المقيدة. إذا لم يظهر الخيار، فحاول تفعيل خدمة إمكانية الوصول أولًا ثم عد إلى هنا.</string>
+    <string name="guide_open_app_info">فتح معلومات التطبيق</string>
+    <string name="guide_open_settings">فتح الإعدادات</string>
+    <string name="guide_accessibility_title">2. تفعيل خدمة إمكانية الوصول</string>
+    <string name="guide_accessibility_body">في إعدادات إمكانية الوصول، ابحث عن هذا التطبيق، وغالبًا يكون ضمن التطبيقات المثبتة أو التي تم تنزيلها، ثم فعّله.</string>
+    <string name="guide_overlay_title">3. السماح بالظهور فوق التطبيقات</string>
+    <string name="guide_overlay_body">ابحث عن هذا التطبيق في القائمة واسمح له بالظهور في المقدمة. يحتاج العداد العائم إلى ذلك.</string>
+    <string name="guide_battery_title">4. استثناء التطبيق من قيود البطارية</string>
+    <string name="guide_battery_body">اختر السماح للتطبيق بالعمل دون قيود البطارية، حتى لا يوقفه أندرويد في الخلفية.</string>
+    <string name="guide_autostart_title">5. التشغيل التلقائي (بعض الأجهزة)</string>
+    <string name="guide_autostart_body">تضيف بعض الشركات المصنعة إذنًا خاصًا للتشغيل التلقائي أو العمل في الخلفية. ابحث عنه في شاشة معلومات التطبيق أو في تطبيق إدارة الجهاز، واسمح لهذا التطبيق.</string>
+    <string name="guide_screen_unavailable">هذه الشاشة غير متاحة على جهازك. ابحث عنها في الإعدادات.</string>
+
+    <string name="helper_command">أدخل أمرك الخاص. لا يتم ملء أي شيء تلقائيًا.</string>
+    <string name="notice_enter_command">أدخل أمرك في التطبيق أولًا</string>
+    <string name="notice_enter_channel">أدخل قناتك في التطبيق أولًا</string>
+    <string name="event_room_not_found">لم يُرسل: القناة غير موجودة في هذا الحساب</string>
+
+    <string name="button_test_channel">اختبار القناة (لا يرسل شيئًا)</string>
+    <string name="toast_channel_ok">تم العثور على القناة والتحقق منها</string>
+    <string name="notice_tab_not_found">لم يتم العثور على تبويب القنوات في WOLF</string>
+    <string name="notice_room_ambiguous">توجد عدة قنوات بهذا الاسم. أدخل اسمًا مميزًا.</string>
+    <string name="event_room_ambiguous">لم يُرسل: عدة قنوات بالاسم نفسه</string>
+    <string name="event_tab_not_found">لم يُرسل: لم يتم العثور على تبويب القنوات</string>
+
+    <string name="label_schedule">الجدول اليومي</string>
+    <string name="helper_schedule">يبدأ ويتوقف كل يوم في الأوقات التي تختارها، حسب توقيت الهاتف. عند تفعيله يحل محل العمل والراحة، وتبقى إعداداتهما محفوظة.</string>
+    <string name="schedule_start">البداية: %1$s</string>
+    <string name="schedule_end">النهاية: %1$s</string>
+    <string name="schedule_not_set">غير محدد</string>
+    <string name="label_idle_screen">إبقاء الشاشة مضاءة خلال ساعات التوقف</string>
+    <string name="label_vibrate">الاهتزاز قبل الإرسال بـ30 ثانية عند الخروج من WOLF</string>
+    <string name="error_schedule_times">اختر وقت بداية ووقت نهاية مختلفين.</string>
+    <string name="warning_exact_alarm">المنبهات الدقيقة غير مسموحة، لذا قد تتأخر الأوقات المجدولة. اسمح بالمنبهات لهذا التطبيق من الإعدادات.</string>
+    <string name="button_check">فحص بدون إرسال</string>
+    <string name="check_open_wolf">فتح WOLF والفحص</string>
+    <string name="check_pass">ناجح</string>
+    <string name="check_fail">فاشل</string>
+    <string name="check_info">غير مؤكد</string>
+    <string name="check_wolf_open">WOLF مفتوح</string>
+    <string name="check_channel">قناة WOLF مفتوحة</string>
+    <string name="check_room">هذه هي قناتك المحددة</string>
+    <string name="check_message_box">تم العثور على مربع الكتابة</string>
+    <string name="check_send_button">تم العثور على زر الإرسال</string>
+    <string name="check_fix_accessibility">فعّل خدمة إمكانية الوصول.</string>
+    <string name="check_fix_overlay">اسمح بالظهور فوق التطبيقات.</string>
+    <string name="check_fix_wolf">افتح WOLF، ثم أعد هذا الفحص.</string>
+    <string name="check_fix_channel">افتح قناة في WOLF. لا تُستخدم المحادثات الخاصة.</string>
+    <string name="check_fix_room">افتح قناتك المحددة، أو صحّح اسمها في الإعدادات.</string>
+    <string name="check_note_send">يُظهر WOLF هذا الزر بعد كتابة نص فقط، وهذا الفحص لا يكتب أبدًا.</string>
+    <string name="status_running">قيد التشغيل</string>
+    <string name="status_running_reason">تُرسل الأوامر حسب الجدول.</string>
+    <string name="status_attention">تنبيه</string>
+    <string name="status_send_soon">سيُرسل أمر قريبًا.</string>
+    <string name="status_paused">متوقف مؤقتًا</string>
+    <string name="status_rest">فترة راحة</string>
+    <string name="status_rest_left">الوقت المتبقي: %1$s</string>
+    <string name="status_idle">في وضع الانتظار</string>
+    <string name="status_idle_until">في الانتظار حتى %1$s</string>
+    <string name="status_error">توقف بسبب خطأ</string>
+    <string name="status_error_reason">افتح سجل الأحداث لمعرفة السبب.</string>
+    <string name="status_stopped">متوقف</string>
+    <string name="status_stopped_reason">لا يعمل شيء الآن.</string>
+    <string name="status_next_command">الأمر التالي: %1$s</string>
+    <string name="status_schedule_stop">يتوقف الجدول عند %1$s</string>
+    <string name="status_schedule_start">يبدأ الجدول عند %1$s</string>
+    <string name="overlay_command_ready">الأمر جاهز، عد إلى WOLF</string>
+    <string name="notice_idle_outside_hours">خارج ساعات الجدول اليومي</string>
+    <string name="alert_idle_screen_off">انطفأت الشاشة خلال ساعات التوقف. إذا كان الهاتف مقفلًا عند البداية التالية، فستُطبق قاعدة الـ15 دقيقة.</string>
+    <string name="event_popup_trigger">YOUSE 2: تم اكتشاف محفز في النافذة المنبثقة</string>
+    <string name="event_popup_unverified">YOUSE 2: لا يمكن التحقق من مرسل النافذة المنبثقة</string>
+    <string name="event_schedule_start">الجدول: بدأ التشغيل</string>
+    <string name="event_schedule_stop">الجدول: توقف، والآن في الانتظار</string>
+    <string name="event_schedule_missed">الجدول: فاتت البداية</string>
+    <string name="event_idle_screen_off">الانتظار: انطفأت الشاشة</string>
+    <string name="event_check_passed">فحص بدون إرسال: ناجح</string>
+    <string name="event_check_failed">فحص بدون إرسال: توجد مشكلات</string>
+    <string name="event_killed_memory">أغلق أندرويد التطبيق: ذاكرة منخفضة</string>
+    <string name="event_killed_system">أغلق نظام الهاتف التطبيق</string>
+    <string name="event_crashed">تعطل التطبيق</string>
+    <string name="event_stopped_user">أُغلق التطبيق من التطبيقات الأخيرة أو الإعدادات</string>
 </resources>

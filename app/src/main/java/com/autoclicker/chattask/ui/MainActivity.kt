@@ -1,6 +1,7 @@
 package com.autoclicker.chattask.ui
 
 import android.Manifest
+import android.app.TimePickerDialog
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.SuppressLint
 import android.content.ComponentName
@@ -11,40 +12,54 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.text.format.DateFormat
 import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.autoclicker.chattask.R
+import com.autoclicker.chattask.core.CheckItem
+import com.autoclicker.chattask.core.CheckResult
+import com.autoclicker.chattask.core.CheckStatus
 import com.autoclicker.chattask.core.ConfigError
+import com.autoclicker.chattask.core.DailySchedule
+import com.autoclicker.chattask.core.ReadOnlyCheck
+import com.autoclicker.chattask.core.WolfScreen
 import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.data.LanguageManager
 import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.ActivityMainBinding
 import com.autoclicker.chattask.databinding.RowPermissionBinding
-import com.autoclicker.chattask.security.AppGate
 import com.autoclicker.chattask.service.AutoTaskService
+import com.autoclicker.chattask.service.Notices
 import com.autoclicker.chattask.service.OverlayService
+import com.autoclicker.chattask.service.ScheduleKeeper
+import com.autoclicker.chattask.service.TaskBus
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: SettingsStore
     private lateinit var commandEditor: CommandListEditor
+    private lateinit var statusCard: StatusCardView
+    private var scheduleStart = DailySchedule.UNSET
+    private var scheduleEnd = DailySchedule.UNSET
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPermissions() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!AppGate.isUnlocked(this)) {
-            startActivity(Intent(this, ActivationActivity::class.java))
-            finish()
-            return
-        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         store = SettingsStore(this)
@@ -66,11 +81,33 @@ class MainActivity : AppCompatActivity() {
         val tab = savedInstanceState?.getInt(STATE_TAB) ?: 0
         binding.tabsTask.getTabAt(tab)?.select()
         showTab(tab)
-        if (AppGate.isAdmin(this)) setUpKeyGenerator()
+
+        statusCard = StatusCardView(this, binding)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    statusCard.render(TaskBus.status.value, currentSchedule())
+                    delay(STATUS_REFRESH_MS)
+                }
+            }
+        }
+        savedInstanceState?.let {
+            scheduleStart = it.getInt(STATE_SCHEDULE_START, scheduleStart)
+            scheduleEnd = it.getInt(STATE_SCHEDULE_END, scheduleEnd)
+        }
+        showScheduleTimes()
+        binding.buttonScheduleStart.setOnClickListener { pickTime(scheduleStart) { scheduleStart = it } }
+        binding.buttonScheduleEnd.setOnClickListener { pickTime(scheduleEnd) { scheduleEnd = it } }
+        binding.switchSchedule.setOnCheckedChangeListener { _, _ -> showScheduleTimes() }
+        binding.buttonCheck.setOnClickListener { runCheck(openWolf = false) }
 
         binding.topBar.buttonLanguage.setOnClickListener { LanguageManager.toggle(this) }
-        binding.buttonPickApp.setOnClickListener {
-            AppPickerDialog.show(this) { binding.inputTarget.setText(it) }
+        binding.buttonTestChannel.setOnClickListener { testChannel() }
+        binding.buttonGuide.setOnClickListener {
+            startActivity(Intent(this, GuideActivity::class.java))
+        }
+        binding.buttonLog.setOnClickListener {
+            startActivity(Intent(this, LogActivity::class.java))
         }
 
         binding.rowAccessibility.title.setText(R.string.permission_accessibility)
@@ -78,9 +115,7 @@ class MainActivity : AppCompatActivity() {
         binding.rowNotifications.title.setText(R.string.permission_notifications)
         binding.rowBattery.title.setText(R.string.permission_battery)
 
-        binding.rowAccessibility.action.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
+        binding.rowAccessibility.action.setOnClickListener { showAccessibilityDisclosure() }
         binding.rowOverlay.action.setOnClickListener {
             startActivity(
                 Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")),
@@ -99,24 +134,104 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_COMMANDS, SettingsStore.encodeCommands(commandEditor.read()))
         outState.putInt(STATE_TAB, binding.tabsTask.selectedTabPosition)
+        outState.putInt(STATE_SCHEDULE_START, scheduleStart)
+        outState.putInt(STATE_SCHEDULE_END, scheduleEnd)
+    }
+
+    /** Always shown first, so nobody turns the service on without knowing what it does. */
+    private fun showAccessibilityDisclosure() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.disclosure_title)
+            .setMessage(R.string.disclosure_message)
+            .setPositiveButton(R.string.disclosure_continue) { _, _ ->
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun currentSchedule() = DailySchedule(
+        enabled = binding.switchSchedule.isChecked,
+        startMinute = scheduleStart,
+        endMinute = scheduleEnd,
+        keepScreenOnWhenIdle = binding.switchIdleScreen.isChecked,
+    )
+
+    private fun pickTime(current: Int, onPicked: (Int) -> Unit) {
+        val known = current >= 0
+        TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                onPicked(hour * 60 + minute)
+                showScheduleTimes()
+            },
+            if (known) current / 60 else 12,
+            if (known) current % 60 else 0,
+            DateFormat.is24HourFormat(this),
+        ).show()
+    }
+
+    private fun showScheduleTimes() = with(binding) {
+        rowSchedule.visibility = if (switchSchedule.isChecked) View.VISIBLE else View.GONE
+        buttonScheduleStart.text = getString(R.string.schedule_start, timeLabel(scheduleStart))
+        buttonScheduleEnd.text = getString(R.string.schedule_end, timeLabel(scheduleEnd))
+        val noExactAlarms = switchSchedule.isChecked && !ScheduleKeeper.canUseExactAlarms(this@MainActivity)
+        textScheduleError.visibility = if (noExactAlarms) View.VISIBLE else View.GONE
+        textScheduleError.setText(R.string.warning_exact_alarm)
+    }
+
+    /** Twelve-hour phones show AM or PM here, so the picked period is always clear. */
+    private fun timeLabel(minute: Int): String {
+        if (minute < 0) return getString(R.string.schedule_not_set)
+        val time = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, minute / 60)
+            set(Calendar.MINUTE, minute % 60)
+        }
+        return DateFormat.getTimeFormat(this).format(time.time)
+    }
+
+    private fun runCheck(openWolf: Boolean) {
+        val service = AutoTaskService.instance ?: return showCheck(
+            ReadOnlyCheck.evaluate(false, Settings.canDrawOverlays(this), false, WolfScreen(), false, "", false),
+        )
+        service.checkWithoutSending(openWolf) { results ->
+            if (openWolf) startActivity(Intent(this, MainActivity::class.java))
+            showCheck(results)
+        }
+    }
+
+    private fun showCheck(results: List<CheckResult>) {
+        val wolfClosed = results.any { it.item == CheckItem.WOLF_OPEN && it.status == CheckStatus.FAIL }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.button_check)
+            .setMessage(results.joinToString("\n\n") { CheckText.lineFor(this, it) })
+            .setPositiveButton(android.R.string.ok, null)
+        if (wolfClosed && AutoTaskService.instance != null) {
+            dialog.setNeutralButton(R.string.check_open_wolf) { _, _ -> runCheck(openWolf = true) }
+        }
+        dialog.show()
+    }
+
+    /** Walks to the channel and verifies it. It never types or sends. */
+    private fun testChannel() {
+        val room = binding.inputRoom.text?.toString().orEmpty().trim()
+        val service = AutoTaskService.instance
+        when {
+            room.isEmpty() -> binding.layoutRoom.error = getString(R.string.error_room_required)
+            service == null -> Toast.makeText(this, R.string.toast_permissions_needed, Toast.LENGTH_LONG).show()
+            else -> {
+                binding.layoutRoom.error = null
+                service.testNavigation(room) { result ->
+                    val message = Notices.forRecovery(result).takeIf { it != 0 } ?: R.string.toast_channel_ok
+                    Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun showTab(position: Int) {
         binding.panelTask1.visibility = if (position == 0) View.VISIBLE else View.GONE
         binding.panelReactive.visibility = if (position == 1) View.VISIBLE else View.GONE
-    }
-
-    /** Only reached on the device activated with the master passcode. */
-    private fun setUpKeyGenerator() = with(binding) {
-        cardAdmin.visibility = View.VISIBLE
-        buttonGenerateKey.setOnClickListener {
-            val licenseId = inputAdminLicense.text?.toString().orEmpty().trim()
-            val isValid = LICENSE_ID.matches(licenseId.uppercase())
-            layoutAdminLicense.error = if (isValid) null else getString(R.string.error_license_id)
-            rowGeneratedKey.visibility = if (isValid) View.VISIBLE else View.GONE
-            if (isValid) textGeneratedKey.text = AppGate.licenseKeys.keyFor(licenseId)
-        }
-        buttonCopyKey.setOnClickListener { copyToClipboard(textGeneratedKey.text) }
     }
 
     override fun onResume() {
@@ -134,7 +249,6 @@ class MainActivity : AppCompatActivity() {
         inputJitterMin.setText(config.jitterMinSec.toString())
         inputJitterMax.setText(config.jitterMaxSec.toString())
         inputKeywords.setText(config.popupKeywords.joinToString(", "))
-        inputTarget.setText(config.targetPackage)
         inputRoom.setText(config.targetRoom)
         checkRestrictRoom.isChecked = config.restrictToRoom
         switchReactive.isChecked = config.reactive.enabled
@@ -144,6 +258,11 @@ class MainActivity : AppCompatActivity() {
         inputReactiveRoom.setText(config.reactive.room)
         switchSkipLists.isChecked = config.skipListItems
         switchKeepScreen.isChecked = config.keepScreenOn
+        scheduleStart = config.schedule.startMinute
+        scheduleEnd = config.schedule.endMinute
+        switchSchedule.isChecked = config.schedule.enabled
+        switchIdleScreen.isChecked = config.schedule.keepScreenOnWhenIdle
+        switchVibrate.isChecked = config.vibrateBeforeSend
     }
 
     private fun readConfig() = with(binding) {
@@ -161,9 +280,10 @@ class MainActivity : AppCompatActivity() {
             jitterMinSec = inputJitterMin.intValue(),
             jitterMaxSec = inputJitterMax.intValue(),
             popupKeywords = TaskConfig.parseKeywords(inputKeywords.text?.toString().orEmpty()),
-            targetPackage = inputTarget.text?.toString().orEmpty().trim(),
             targetRoom = inputRoom.text?.toString().orEmpty().trim(),
             restrictToRoom = checkRestrictRoom.isChecked,
+            schedule = currentSchedule(),
+            vibrateBeforeSend = switchVibrate.isChecked,
             reactive = ReactiveConfig(
                 enabled = switchReactive.isChecked,
                 triggers = TaskConfig.parseKeywords(inputTriggers.text?.toString().orEmpty()),
@@ -196,8 +316,11 @@ class MainActivity : AppCompatActivity() {
         layoutIntervalMinutes.error = message(ConfigError.INTERVAL_TOO_SHORT)
         layoutDurationHours.error = message(ConfigError.DURATION_TOO_SHORT)
         layoutJitterMin.error = message(ConfigError.JITTER_RANGE, ConfigError.JITTER_TOO_LARGE)
-        layoutTarget.error = message(ConfigError.BAD_PACKAGE)
         layoutRoom.error = message(ConfigError.ROOM_TOO_LONG, ConfigError.ROOM_REQUIRED)
+        if (ConfigError.SCHEDULE_TIMES in errors) {
+            textScheduleError.visibility = View.VISIBLE
+            textScheduleError.setText(R.string.error_schedule_times)
+        }
         layoutTriggers.error = message(ConfigError.REACTIVE_NO_TRIGGER)
         layoutReaction.error = message(ConfigError.REACTIVE_NO_COMMAND)
         layoutReactiveRoom.error = message(ConfigError.REACTIVE_ROOM_REQUIRED)
@@ -215,9 +338,9 @@ class MainActivity : AppCompatActivity() {
         ConfigError.DURATION_TOO_SHORT -> R.string.error_duration_too_short
         ConfigError.JITTER_RANGE -> R.string.error_jitter_range
         ConfigError.JITTER_TOO_LARGE -> R.string.error_jitter_too_large
-        ConfigError.BAD_PACKAGE -> R.string.error_bad_package
         ConfigError.ROOM_TOO_LONG -> R.string.error_room_too_long
         ConfigError.ROOM_REQUIRED, ConfigError.REACTIVE_ROOM_REQUIRED -> R.string.error_room_required
+        ConfigError.SCHEDULE_TIMES -> R.string.error_schedule_times
         ConfigError.REACTIVE_NO_TRIGGER -> R.string.error_no_trigger
         ConfigError.REACTIVE_NO_COMMAND -> R.string.error_no_reaction
     }
@@ -228,12 +351,14 @@ class MainActivity : AppCompatActivity() {
         showErrors(errors)
         if (errors.isNotEmpty()) return
         store.saveConfig(config)
+        AutoTaskService.instance?.reloadSettings()
 
         if (!isAccessibilityEnabled() || !Settings.canDrawOverlays(this)) {
             Toast.makeText(this, R.string.toast_permissions_needed, Toast.LENGTH_LONG).show()
             return
         }
-        if (OverlayService.start(this)) moveTaskToBack(true)
+        // Finishing frees memory and leaves no recents card, as both were behind process kills.
+        if (OverlayService.start(this)) finishAndRemoveTask()
     }
 
     private fun refreshPermissions() {
@@ -277,12 +402,14 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         const val STATE_COMMANDS = "commands"
         const val STATE_TAB = "tab"
-        val LICENSE_ID = Regex("[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}")
+        const val STATE_SCHEDULE_START = "schedule_start"
+        const val STATE_SCHEDULE_END = "schedule_end"
+        const val STATUS_REFRESH_MS = 1_000L
         val REACTIVE_ERRORS = setOf(
             ConfigError.REACTIVE_NO_TRIGGER,
             ConfigError.REACTIVE_NO_COMMAND,
             ConfigError.REACTIVE_ROOM_REQUIRED,
         )
-        val TASK1_ERRORS = ConfigError.entries.toSet() - REACTIVE_ERRORS - ConfigError.BAD_PACKAGE
+        val TASK1_ERRORS = ConfigError.entries.toSet() - REACTIVE_ERRORS
     }
 }

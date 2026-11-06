@@ -1,6 +1,7 @@
 package com.autoclicker.chattask.service
 
 import androidx.annotation.StringRes
+import com.autoclicker.chattask.core.BarState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,11 @@ data class TaskStatus(
     val popups: Int = 0,
     val workCycle: Int = 1,
     val reactions: Int = 0,
+    val barState: BarState = BarState.NORMAL,
+    /** The wall clock time idle ends, or 0 when the daily schedule is not idling. */
+    val idleUntilMs: Long = 0,
+    val idleKeepScreen: Boolean = false,
+    val heldByLock: Boolean = false,
     val keepScreenOn: Boolean = false,
     /** Message for the overlay, or 0 for none. */
     @StringRes val notice: Int = 0,

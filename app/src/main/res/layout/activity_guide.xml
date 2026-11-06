@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_title"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/guide_intro"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideTitle"
+            android:text="@string/guide_restricted_title" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideBody"
+            android:text="@string/guide_restricted_body" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonRestricted"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_open_app_info" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideTitle"
+            android:text="@string/guide_accessibility_title" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideBody"
+            android:text="@string/guide_accessibility_body" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonAccessibility"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_open_settings" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideTitle"
+            android:text="@string/guide_overlay_title" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideBody"
+            android:text="@string/guide_overlay_body" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonOverlay"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_open_settings" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideTitle"
+            android:text="@string/guide_battery_title" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideBody"
+            android:text="@string/guide_battery_body" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBattery"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_open_settings" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideTitle"
+            android:text="@string/guide_autostart_title" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideBody"
+            android:text="@string/guide_autostart_body" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonAutostart"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_open_app_info" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

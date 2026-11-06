@@ -2,4 +2,14 @@
 <resources>
     <color name="brand">#0B6E5F</color>
     <color name="launcher_background">#0B6E5F</color>
+    <color name="bar_soon">#E65100</color>
+    <color name="bar_ready">#B71C1C</color>
+    <color name="bar_text">#FFFFFF</color>
+    <color name="status_running">#2E7D32</color>
+    <color name="status_attention">#E65100</color>
+    <color name="status_paused">#F9A825</color>
+    <color name="status_rest">#1565C0</color>
+    <color name="status_idle">#6A1B9A</color>
+    <color name="status_error">#B71C1C</color>
+    <color name="status_stopped">#616161</color>
 </resources>

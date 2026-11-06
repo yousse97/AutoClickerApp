@@ -45,6 +45,12 @@ data class SessionSchedule(
         return copy(anchorMs = anchor, nextFireMs = max(anchor + jitterMs, now + MIN_GAP_MS))
     }
 
+    /** After a delayed send the interval counts from now, so two sends never land close together. */
+    fun restartedAt(now: Long, jitterMs: Long): SessionSchedule {
+        val anchor = now + intervalMs
+        return copy(anchorMs = anchor, nextFireMs = max(anchor + jitterMs, now + MIN_GAP_MS))
+    }
+
     /** Pausing moves every deadline, so the paused time does not consume the session. */
     fun shiftedBy(deltaMs: Long): SessionSchedule = copy(
         anchorMs = anchorMs + deltaMs,

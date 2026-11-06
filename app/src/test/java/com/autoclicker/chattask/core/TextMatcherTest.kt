@@ -7,18 +7,6 @@ import org.junit.Test
 
 class TextMatcherTest {
     @Test
-    fun `room matches as a whole token only`() {
-        assertTrue(RoomMatcher.matches("41110", "41110"))
-        assertTrue(RoomMatcher.matches("غرفة 41110 العامة", "41110"))
-        assertTrue(RoomMatcher.matches("Room #41110", " 41110 "))
-        assertTrue(RoomMatcher.matches("غرفة الأصدقاء", "غرفة الاصدقاء"))
-        assertFalse(RoomMatcher.matches("141110", "41110"))
-        assertFalse(RoomMatcher.matches("411101", "41110"))
-        assertFalse(RoomMatcher.matches(null, "41110"))
-        assertFalse(RoomMatcher.matches("41110", "  "))
-    }
-
-    @Test
     fun `x labels dismiss in either case without matching words that contain x`() {
         val keywords = KeywordSet(TaskConfig.DEFAULT_POPUP_KEYWORDS)
         assertTrue(keywords.matches("x"))
@@ -59,11 +47,6 @@ class TextMatcherTest {
         assertFalse(keywords.matches(""))
         assertFalse(keywords.matches("   "))
         assertFalse(keywords.matches(null))
-    }
-
-    @Test
-    fun `the default command is not treated as a dismiss label`() {
-        assertFalse(keywords.matches(TaskConfig().commands.first().text))
     }
 
     @Test

@@ -63,24 +63,6 @@ object InputMatcher {
     }
 }
 
-/** Finds a room label: "41110" matches "Room 41110" but not "141110". */
-object RoomMatcher {
-    fun matches(label: CharSequence?, room: String): Boolean {
-        if (label.isNullOrBlank()) return false
-        val wanted = TextNormalizer.normalize(room)
-        if (wanted.isEmpty()) return false
-        val text = TextNormalizer.normalize(label)
-        var index = text.indexOf(wanted)
-        while (index >= 0) {
-            val before = text.getOrNull(index - 1)
-            val after = text.getOrNull(index + wanted.length)
-            if (before?.isLetterOrDigit() != true && after?.isLetterOrDigit() != true) return true
-            index = text.indexOf(wanted, index + 1)
-        }
-        return false
-    }
-}
-
 /** Recognises well-known resource-id naming for buttons that have no text. */
 object ViewIdMatcher {
     private val CLOSE = Regex(

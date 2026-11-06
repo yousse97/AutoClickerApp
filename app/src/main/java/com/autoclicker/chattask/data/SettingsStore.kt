@@ -2,6 +2,7 @@ package com.autoclicker.chattask.data
 
 import android.content.Context
 import com.autoclicker.chattask.core.CommandEntry
+import com.autoclicker.chattask.core.DailySchedule
 import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.ScheduleOffsets
 import com.autoclicker.chattask.core.SendMode
@@ -12,7 +13,6 @@ import org.json.JSONObject
 
 /** A running session saved to disk so it can resume if Android kills the process. */
 data class SessionSnapshot(
-    val target: String,
     val paused: Boolean,
     val offsets: ScheduleOffsets,
     val sent: Int,
@@ -29,6 +29,19 @@ class SettingsStore(context: Context) {
     private val sessionPrefs =
         context.applicationContext.getSharedPreferences("session", Context.MODE_PRIVATE)
     private val secure = SecureStore(context)
+
+    /** A stop that needs a manual restart holds until this time. */
+    var blockedUntilMs: Long
+        get() = prefs.getLong(KEY_BLOCKED_UNTIL, 0)
+        set(value) = prefs.edit().putLong(KEY_BLOCKED_UNTIL, value).apply()
+
+    var watchdogWaiting: Boolean
+        get() = prefs.getBoolean(KEY_WATCHDOG_WAITING, false)
+        set(value) = prefs.edit().putBoolean(KEY_WATCHDOG_WAITING, value).apply()
+
+    var lastExitLoggedMs: Long
+        get() = prefs.getLong(KEY_LAST_EXIT, 0)
+        set(value) = prefs.edit().putLong(KEY_LAST_EXIT, value).apply()
 
     var overlaySizeIndex: Int
         get() = prefs.getInt(KEY_OVERLAY_SIZE, 1)
@@ -50,7 +63,13 @@ class SettingsStore(context: Context) {
             popupKeywords = prefs.getString(KEY_KEYWORDS, null)?.let(TaskConfig::parseKeywords)
                 ?.let { if (legacy) (it + LEGACY_NEW_KEYWORDS).distinct() else it }
                 ?: defaults.popupKeywords,
-            targetPackage = prefs.getString(KEY_TARGET, null) ?: defaults.targetPackage,
+            schedule = DailySchedule(
+                enabled = prefs.getBoolean(KEY_SCHEDULE_ENABLED, false),
+                startMinute = prefs.getInt(KEY_SCHEDULE_START, DailySchedule.UNSET),
+                endMinute = prefs.getInt(KEY_SCHEDULE_END, DailySchedule.UNSET),
+                keepScreenOnWhenIdle = prefs.getBoolean(KEY_IDLE_SCREEN, true),
+            ),
+            vibrateBeforeSend = prefs.getBoolean(KEY_VIBRATE, true),
             targetRoom = secure.taskRoom,
             restrictToRoom = secure.restrictTaskRoom,
             reactive = ReactiveConfig(
@@ -79,7 +98,11 @@ class SettingsStore(context: Context) {
             .putInt(KEY_JITTER_MIN, config.jitterMinSec)
             .putInt(KEY_JITTER_MAX, config.jitterMaxSec)
             .putString(KEY_KEYWORDS, config.popupKeywords.joinToString("\n"))
-            .putString(KEY_TARGET, config.targetPackage)
+            .putBoolean(KEY_SCHEDULE_ENABLED, config.schedule.enabled)
+            .putInt(KEY_SCHEDULE_START, config.schedule.startMinute)
+            .putInt(KEY_SCHEDULE_END, config.schedule.endMinute)
+            .putBoolean(KEY_IDLE_SCREEN, config.schedule.keepScreenOnWhenIdle)
+            .putBoolean(KEY_VIBRATE, config.vibrateBeforeSend)
             .putBoolean(KEY_REACTIVE_ENABLED, config.reactive.enabled)
             .putString(KEY_REACTIVE_TRIGGERS, config.reactive.triggers.joinToString("\n"))
             .putString(KEY_REACTIVE_COMMAND, config.reactive.command)
@@ -90,7 +113,7 @@ class SettingsStore(context: Context) {
 
     fun saveSession(snapshot: SessionSnapshot) {
         sessionPrefs.edit()
-            .putString(KEY_S_TARGET, snapshot.target)
+            .putBoolean(KEY_S_ACTIVE, true)
             .putBoolean(KEY_S_PAUSED, snapshot.paused)
             .putLong(KEY_S_ANCHOR, snapshot.offsets.anchorInMs)
             .putLong(KEY_S_NEXT, snapshot.offsets.nextInMs)
@@ -106,9 +129,8 @@ class SettingsStore(context: Context) {
     }
 
     fun loadSession(): SessionSnapshot? {
-        val target = sessionPrefs.getString(KEY_S_TARGET, null) ?: return null
+        if (!sessionPrefs.contains(KEY_S_ACTIVE)) return null
         return SessionSnapshot(
-            target = target,
             paused = sessionPrefs.getBoolean(KEY_S_PAUSED, false),
             offsets = ScheduleOffsets(
                 anchorInMs = sessionPrefs.getLong(KEY_S_ANCHOR, 0),
@@ -163,6 +185,14 @@ class SettingsStore(context: Context) {
         private const val KEY_COMMANDS = "commands"
         private const val KEY_REST = "rest_sec"
         private const val KEY_OVERLAY_SIZE = "overlay_size"
+        private const val KEY_BLOCKED_UNTIL = "blocked_until"
+        private const val KEY_LAST_EXIT = "last_exit"
+        private const val KEY_WATCHDOG_WAITING = "watchdog_waiting"
+        private const val KEY_SCHEDULE_ENABLED = "schedule_enabled"
+        private const val KEY_SCHEDULE_START = "schedule_start"
+        private const val KEY_SCHEDULE_END = "schedule_end"
+        private const val KEY_IDLE_SCREEN = "idle_screen"
+        private const val KEY_VIBRATE = "vibrate"
         private const val KEY_REACTIVE_ENABLED = "reactive_enabled"
         private const val KEY_REACTIVE_TRIGGERS = "reactive_triggers"
         private const val KEY_REACTIVE_COMMAND = "reactive_command"
@@ -171,11 +201,10 @@ class SettingsStore(context: Context) {
         private const val KEY_JITTER_MIN = "jitter_min_sec"
         private const val KEY_JITTER_MAX = "jitter_max_sec"
         private const val KEY_KEYWORDS = "popup_keywords"
-        private const val KEY_TARGET = "target_package"
         private const val KEY_SKIP_LISTS = "skip_list_items"
         private const val KEY_KEEP_SCREEN = "keep_screen_on"
 
-        private const val KEY_S_TARGET = "target"
+        private const val KEY_S_ACTIVE = "active"
         private const val KEY_S_PAUSED = "paused"
         private const val KEY_S_ANCHOR = "anchor_in"
         private const val KEY_S_NEXT = "next_in"

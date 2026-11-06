@@ -2,10 +2,14 @@ package com.autoclicker.chattask.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.app.KeyguardManager
+import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
+import android.os.PowerManager
 import android.view.accessibility.AccessibilityNodeInfo
-import android.view.accessibility.AccessibilityWindowInfo
+import com.autoclicker.chattask.core.Foreground
+import com.autoclicker.chattask.core.WolfUi
 
 /**
  * Helpers over the accessibility node tree.
@@ -14,14 +18,17 @@ import android.view.accessibility.AccessibilityWindowInfo
  * unrecycled node is simply garbage collected.
  */
 object NodeTools {
-    private const val SYSTEM_UI = "com.android.systemui"
     private const val MAX_WALK_NODES = 2_500
     private const val MAX_CLICK_ASCENT = 4
     private const val MAX_ANCESTORS = 40
     private const val TAP_DURATION_MS = 60L
 
-    /** Root of each on-screen window of [pkg], top-most first. Empty if the app is not visible. */
+    /**
+     * Root of each on-screen window of [pkg], top-most first. Every read and action starts here,
+     * and the list is empty unless the active window belongs to [pkg], so no other app is touched.
+     */
     fun targetRoots(service: AccessibilityService, pkg: String): List<AccessibilityNodeInfo> {
+        if (activePackage(service) != pkg) return emptyList()
         val windows = runCatching { service.windows }.getOrNull().orEmpty()
         val roots = windows.sortedByDescending { it.layer }
             .mapNotNull { runCatching { it.root }.getOrNull() }
@@ -30,18 +37,21 @@ object NodeTools {
         return listOfNotNull(service.rootInActiveWindow?.takeIf { it.packageName?.toString() == pkg })
     }
 
-    /** The app the user is looking at, ignoring this app's overlay and the system UI. */
-    fun foregroundPackage(service: AccessibilityService): String? {
-        val own = service.packageName
-        val active = service.rootInActiveWindow?.packageName?.toString()
-        if (active != null && active != own && active != SYSTEM_UI) return active
-        val windows = runCatching { service.windows }.getOrNull().orEmpty()
-        return windows.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
-            .sortedByDescending { it.layer }
-            .firstNotNullOfOrNull { window ->
-                runCatching { window.root }.getOrNull()?.packageName?.toString()
-                    ?.takeIf { it != own && it != SYSTEM_UI }
-            }
+    /** The name of the app in front. Nothing else is read from a window outside WOLF. */
+    fun activePackage(service: AccessibilityService): String? =
+        runCatching { service.rootInActiveWindow?.packageName?.toString() }.getOrNull()
+
+    /** Where the user is. Only the name of the app in front is read to tell these apart. */
+    fun foreground(service: AccessibilityService): Foreground {
+        val power = service.getSystemService(PowerManager::class.java)
+        val keyguard = service.getSystemService(KeyguardManager::class.java)
+        if (!power.isInteractive || keyguard.isKeyguardLocked) return Foreground.LOCKED
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return when (activePackage(service)) {
+            WolfUi.PACKAGE -> Foreground.WOLF
+            service.packageManager.resolveActivity(home, 0)?.activityInfo?.packageName -> Foreground.HOME
+            else -> Foreground.OTHER_APP
+        }
     }
 
     /** Breadth-first walk with a node budget, so a huge tree cannot stall the worker thread. */

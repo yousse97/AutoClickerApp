@@ -2,10 +2,14 @@ package com.autoclicker.chattask.service
 
 import android.accessibilityservice.AccessibilityService
 import android.os.SystemClock
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import com.autoclicker.chattask.core.PopupTrigger
 import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.ReactiveDetector
 import com.autoclicker.chattask.core.TextNormalizer
+import com.autoclicker.chattask.core.WolfUi
+import com.autoclicker.chattask.data.EventLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -25,12 +29,16 @@ class ReactiveEngine(
     private val sender: CommandSender,
     private val navigator: RoomNavigator,
     private val onResult: (Boolean) -> Unit,
+    private val onPopup: () -> Unit,
+    private val needRoom: (String) -> Unit,
 ) {
     private class Params(val target: String, val config: ReactiveConfig, val triggers: List<String>)
 
     @Volatile private var params: Params? = null
     private val signal = Channel<Unit>(Channel.CONFLATED)
     private val detector = ReactiveDetector()
+    private val popupTrigger = PopupTrigger()
+    private var pendingPopup = false
 
     fun launchIn(scope: CoroutineScope, dispatcher: CoroutineDispatcher): Job =
         scope.launch(dispatcher) {
@@ -62,24 +70,71 @@ class ReactiveEngine(
     }
 
     private suspend fun scan(active: Params) {
+        val matches = findMatches(active)
+        val inPopup = matches.filter(::isPopupNode)
+        if (popupTrigger.observe(inPopup.isNotEmpty(), SystemClock.elapsedRealtime())) {
+            pendingPopup = true
+            onPopup()
+            traceStructure(inPopup.first())
+        }
+        if (pendingPopup) answerPopup(active)
         if (sender.findInput(active.target) == null) return detector.forgetBaseline()
-        val count = countMatches(active)
+        val count = (matches - inPopup.toSet()).size
         if (!detector.observe(count, SystemClock.elapsedRealtime())) return
         val config = active.config
-        if (config.restrictToRoom && !navigator.isInRoom(active.target, config.room)) return
+        val screen = navigator.readScreen()
+        if (!screen.isChannel) return
+        if (config.restrictToRoom && !WolfUi.isRoom(screen.title, config.room)) return
         onResult(react(active))
     }
 
-    private fun countMatches(active: Params): Int {
-        val seen = HashSet<String>()
+    /** Waits for the channel, then replies there. The private chat itself is never touched. */
+    private suspend fun answerPopup(active: Params) {
+        val config = active.config
+        val screen = navigator.readScreen()
+        val inRoom = !config.restrictToRoom || WolfUi.isRoom(screen.title, config.room)
+        if (!screen.isChannel || !inRoom) {
+            if (config.restrictToRoom) needRoom(config.room)
+            return
+        }
+        pendingPopup = false
+        onResult(react(active))
+    }
+
+    private fun findMatches(active: Params): List<AccessibilityNodeInfo> {
+        val seen = HashMap<String, AccessibilityNodeInfo>()
         for (root in NodeTools.targetRoots(service, active.target)) {
             for (trigger in active.triggers) {
                 root.findAccessibilityNodeInfosByText(trigger)
                     ?.filter(::isMessage)
-                    ?.forEach { seen += "${NodeTools.boundsOf(it)}|${it.text}|${it.contentDescription}" }
+                    ?.forEach { seen["${NodeTools.boundsOf(it)}|${it.text}|${it.contentDescription}"] = it }
             }
         }
-        return seen.size
+        return seen.values.toList()
+    }
+
+    /** Messages live in WOLF's chat view and previews in lists, so anything else is a popup. */
+    private fun isPopupNode(node: AccessibilityNodeInfo): Boolean {
+        if (NodeTools.isInsideList(node)) return false
+        var current = node.parent
+        var depth = 0
+        while (current != null && depth++ < MAX_ANCESTORS) {
+            if (WolfUi.entryName(current.viewIdResourceName) == CHAT_VIEW) return false
+            current = current.parent
+        }
+        return true
+    }
+
+    /** Logs only ids and class names, to confirm the popup's real structure. Never the text. */
+    private fun traceStructure(node: AccessibilityNodeInfo) {
+        val chain = ArrayList<String>()
+        var current: AccessibilityNodeInfo? = node
+        while (current != null && chain.size < MAX_ANCESTORS) {
+            chain += "${current.className?.toString()?.substringAfterLast('.')}:" +
+                WolfUi.entryName(current.viewIdResourceName).orEmpty()
+            current = current.parent
+        }
+        Log.i(EventLog.TAG, "popup structure ${chain.joinToString(" < ")}")
     }
 
     private fun isMessage(node: AccessibilityNodeInfo): Boolean = node.isVisibleToUser && !node.isEditable
@@ -93,6 +148,8 @@ class ReactiveEngine(
     }
 
     private companion object {
+        const val CHAT_VIEW = "chat"
+        const val MAX_ANCESTORS = 30
         const val MIN_SCAN_GAP_MS = 400L
         const val MAX_ATTEMPTS = 2
         const val RETRY_DELAY_MS = 1_500L

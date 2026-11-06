@@ -2,37 +2,11 @@ package com.autoclicker.chattask.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ReactiveAndLicenseTest {
-    private val keys = LicenseKeys("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff")
-
-    @Test
-    fun `license id is stable, formatted and differs per device`() {
-        val id = LicenseKeys.licenseIdFor("abc123")
-        assertEquals(id, LicenseKeys.licenseIdFor("abc123"))
-        assertTrue(Regex("[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}").matches(id))
-        assertNotEquals(id, LicenseKeys.licenseIdFor("abc124"))
-    }
-
-    @Test
-    fun `a key unlocks only its own device`() {
-        val id = LicenseKeys.licenseIdFor("device-a")
-        val key = keys.keyFor(id)
-        assertTrue(keys.isValid(id, key))
-        assertTrue(keys.isValid(id.lowercase(), " ${key.lowercase().replace("-", "")} "))
-        assertFalse(keys.isValid(LicenseKeys.licenseIdFor("device-b"), key))
-        assertFalse(keys.isValid(id, ""))
-    }
-
-    @Test
-    fun `a key from another secret is rejected`() {
-        val other = LicenseKeys("ff".repeat(32))
-        val id = LicenseKeys.licenseIdFor("device-a")
-        assertFalse(keys.isValid(id, other.keyFor(id)))
-    }
+class ReactiveDetectorTest {
+    private val own = listOf(CommandEntry("my command"))
 
     @Test
     fun `old messages set the baseline and do not fire`() {
@@ -86,24 +60,24 @@ class ReactiveAndLicenseTest {
 
     @Test
     fun `reactive settings are validated only while enabled`() {
-        assertTrue(TaskConfig(reactive = ReactiveConfig(enabled = false, command = "")).validate().isEmpty())
+        assertTrue(TaskConfig(commands = own, reactive = ReactiveConfig(enabled = false, command = "")).validate().isEmpty())
         assertEquals(
             listOf(ConfigError.REACTIVE_NO_COMMAND),
-            TaskConfig(reactive = ReactiveConfig(enabled = true)).validate(),
+            TaskConfig(commands = own, reactive = ReactiveConfig(enabled = true)).validate(),
         )
         assertEquals(
             listOf(ConfigError.REACTIVE_NO_TRIGGER),
-            TaskConfig(reactive = ReactiveConfig(true, emptyList(), "!go")).validate(),
+            TaskConfig(commands = own, reactive = ReactiveConfig(true, emptyList(), "!go")).validate(),
         )
         assertEquals(
             listOf(ConfigError.REACTIVE_ROOM_REQUIRED),
-            TaskConfig(reactive = ReactiveConfig(true, command = "!go", restrictToRoom = true)).validate(),
+            TaskConfig(commands = own, reactive = ReactiveConfig(true, command = "!go", restrictToRoom = true)).validate(),
         )
     }
 
     @Test
     fun `restricting task 1 needs a room`() {
-        assertEquals(listOf(ConfigError.ROOM_REQUIRED), TaskConfig(restrictToRoom = true).validate())
-        assertTrue(TaskConfig(restrictToRoom = true, targetRoom = "41110").validate().isEmpty())
+        assertEquals(listOf(ConfigError.ROOM_REQUIRED), TaskConfig(commands = own, restrictToRoom = true).validate())
+        assertTrue(TaskConfig(commands = own, restrictToRoom = true, targetRoom = "12345").validate().isEmpty())
     }
 }

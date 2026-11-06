@@ -41,7 +41,10 @@ class TaskRunnerTest {
     private val interval = 60_000L
     private val recorder = Recorder()
 
-    private fun TestScope.runner(scope: CoroutineScope, action: suspend () -> Boolean) = TaskRunner(
+    private fun TestScope.runner(scope: CoroutineScope, action: suspend () -> Boolean) =
+        cycleRunner(scope) { if (action()) CycleResult.SENT else CycleResult.FAILED }
+
+    private fun TestScope.cycleRunner(scope: CoroutineScope, action: suspend () -> CycleResult) = TaskRunner(
         scope = scope,
         clock = { currentTime },
         random = Random(3),
@@ -161,6 +164,74 @@ class TaskRunnerTest {
         assertEquals(TaskPhase.IDLE, runner.phase)
         assertEquals(before, sends)
         assertEquals(0, recorder.restsFinished)
+    }
+
+    @Test
+    fun `a held send is pending, keeps the clock running and is sent once on return`() = runTest {
+        var held = true
+        var sends = 0
+        val runner = cycleRunner(backgroundScope) {
+            if (held) {
+                CycleResult.HELD
+            } else {
+                sends++
+                CycleResult.SENT
+            }
+        }
+        runner.start(plan(3_600_000), noJitter)
+
+        advanceTimeBy(300_000)
+        runCurrent()
+        assertEquals(0, sends)
+        assertEquals(0, runner.view().failed)
+        assertEquals(0, runner.view().sent)
+        assertEquals(TaskPhase.RUNNING, runner.phase)
+        assertEquals(0, runner.view().nextInMs)
+        assertTrue(runner.view().sessionLeftMs < 3_400_000)
+
+        held = false
+        advanceTimeBy(2_000)
+        runCurrent()
+        assertEquals(1, sends)
+        assertTrue(runner.view().nextInMs > 0)
+
+        advanceTimeBy(30_000)
+        runCurrent()
+        assertEquals(1, sends)
+    }
+
+    @Test
+    fun `a restored overdue send is not followed by another one seconds later`() = runTest {
+        val sentAt = ArrayList<Long>()
+        val runner = runner(backgroundScope) { sentAt += currentTime; true }
+        val overdue = SessionSchedule(
+            anchorMs = currentTime - 41_000,
+            nextFireMs = currentTime - 41_000,
+            endMs = currentTime + 3_600_000,
+            intervalMs = interval,
+        )
+        runner.start(overdue, noJitter)
+
+        advanceTimeBy(50_000)
+        runCurrent()
+        assertEquals(1, sentAt.size)
+
+        advanceTimeBy(15_000)
+        runCurrent()
+        assertEquals(2, sentAt.size)
+        assertEquals(interval, sentAt[1] - sentAt[0])
+    }
+
+    @Test
+    fun `a session can end while a send is held`() = runTest {
+        val runner = cycleRunner(backgroundScope) { CycleResult.HELD }
+        runner.start(plan(120_000), noJitter)
+
+        advanceTimeBy(125_000)
+        runCurrent()
+
+        assertEquals(0, recorder.finished?.failed)
+        assertEquals(TaskPhase.IDLE, runner.phase)
     }
 
     @Test

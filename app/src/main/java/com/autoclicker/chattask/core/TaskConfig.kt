@@ -2,7 +2,8 @@ package com.autoclicker.chattask.core
 
 /** User-tunable settings for one automation session. */
 data class TaskConfig(
-    val commands: List<CommandEntry> = listOf(CommandEntry("!س ميدان")),
+    /** Starts as one empty row: each user enters their own commands. */
+    val commands: List<CommandEntry> = listOf(CommandEntry("")),
     val intervalSec: Int = 10 * 60 + 10,
     val workDurationSec: Int = 22 * 60 * 60,
     /** Zero means stop after one work period instead of looping. */
@@ -10,16 +11,17 @@ data class TaskConfig(
     val jitterMinSec: Int = 2,
     val jitterMaxSec: Int = 4,
     val popupKeywords: List<String> = DEFAULT_POPUP_KEYWORDS,
-    /** Fixed target app. Blank means "whichever app is on screen when Start is pressed". */
-    val targetPackage: String = "",
-    /** Text shown for the room in the app's lists. Blank means no room navigation. */
+    /** The channel exactly as this user's WOLF account shows it. Never given a default. */
     val targetRoom: String = "",
     /** Send only while the chat header shows [targetRoom]. */
     val restrictToRoom: Boolean = false,
     val reactive: ReactiveConfig = ReactiveConfig(),
+    /** When enabled, this replaces the work and rest cycle. Those settings stay saved. */
+    val schedule: DailySchedule = DailySchedule(),
+    val vibrateBeforeSend: Boolean = true,
     /** Ignore matches inside scrolling lists, so chat messages reading "تم" are never clicked. */
     val skipListItems: Boolean = true,
-    val keepScreenOn: Boolean = true,
+    val keepScreenOn: Boolean = false,
 ) {
     fun validate(): List<ConfigError> = buildList {
         val texts = commands.map { it.text.trim() }
@@ -34,9 +36,7 @@ data class TaskConfig(
         if (workDurationSec < intervalSec) add(ConfigError.DURATION_TOO_SHORT)
         if (jitterMinSec < 0 || jitterMaxSec < jitterMinSec) add(ConfigError.JITTER_RANGE)
         if (jitterMaxSec + MIN_JITTER_MARGIN_SEC > intervalSec) add(ConfigError.JITTER_TOO_LARGE)
-        if (targetPackage.isNotBlank() && !PACKAGE_REGEX.matches(targetPackage.trim())) {
-            add(ConfigError.BAD_PACKAGE)
-        }
+        if (schedule.enabled && !schedule.isComplete) add(ConfigError.SCHEDULE_TIMES)
         val rooms = listOf(targetRoom, reactive.room)
         if (rooms.any { it.trim().length > MAX_ROOM_LENGTH }) add(ConfigError.ROOM_TOO_LONG)
         if (restrictToRoom && targetRoom.isBlank()) add(ConfigError.ROOM_REQUIRED)
@@ -60,7 +60,6 @@ data class TaskConfig(
         const val MAX_COMMANDS = 5
         const val MAX_COMMAND_DELAY_SEC = 3600
         const val MAX_ROOM_LENGTH = 64
-        private val PACKAGE_REGEX = Regex("""[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+""")
 
         val DEFAULT_POPUP_KEYWORDS = listOf("تم", "إغلاق", "اغلاق", "close", "done", "x", "X", "×", "✕")
 
@@ -80,10 +79,10 @@ enum class ConfigError {
     DURATION_TOO_SHORT,
     JITTER_RANGE,
     JITTER_TOO_LARGE,
-    BAD_PACKAGE,
     ROOM_TOO_LONG,
     ROOM_REQUIRED,
     REACTIVE_NO_TRIGGER,
     REACTIVE_NO_COMMAND,
     REACTIVE_ROOM_REQUIRED,
+    SCHEDULE_TIMES,
 }

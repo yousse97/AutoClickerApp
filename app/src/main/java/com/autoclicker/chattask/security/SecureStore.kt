@@ -5,27 +5,20 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 
-enum class LicenseRole { NONE, STANDARD, ADMIN }
-
-/** Keystore-backed encrypted storage for activation and the per-device room settings. */
+/** Keystore-backed encrypted storage for the per-device room settings. */
 class SecureStore(context: Context) {
     private val appContext = context.applicationContext
 
     private val prefs: SharedPreferences? by lazy {
-        // An unreadable file cannot be repaired, so it is replaced and the user activates again.
-        runCatching(::open).getOrNull() ?: run {
+        // An unreadable file cannot be repaired, so it is replaced and the rooms are entered again.
+        val opened = runCatching(::open).getOrNull() ?: run {
             appContext.deleteSharedPreferences(FILE_NAME)
             runCatching(::open).getOrNull()
         }
+        // Clears what the licensing system stored in earlier builds.
+        opened?.takeIf { it.contains(KEY_LEGACY_ROLE) }?.edit()?.remove(KEY_LEGACY_ROLE)?.apply()
+        opened
     }
-
-    var role: LicenseRole
-        get() = prefs?.getString(KEY_ROLE, null)
-            ?.let { name -> LicenseRole.entries.firstOrNull { it.name == name } }
-            ?: LicenseRole.NONE
-        set(value) {
-            prefs?.edit()?.putString(KEY_ROLE, value.name)?.commit()
-        }
 
     var taskRoom: String
         get() = prefs?.getString(KEY_TASK_ROOM, null).orEmpty()
@@ -61,7 +54,7 @@ class SecureStore(context: Context) {
 
     private companion object {
         const val FILE_NAME = "secure"
-        const val KEY_ROLE = "role"
+        const val KEY_LEGACY_ROLE = "role"
         const val KEY_TASK_ROOM = "task_room"
         const val KEY_REACTIVE_ROOM = "reactive_room"
         const val KEY_RESTRICT_TASK = "restrict_task"

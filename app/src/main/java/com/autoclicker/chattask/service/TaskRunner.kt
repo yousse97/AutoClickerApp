@@ -15,6 +15,9 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
+/** HELD means the send waits for a valid screen: the slot stays pending and is not a failure. */
+enum class CycleResult { SENT, FAILED, HELD }
+
 data class RunnerView(
     val phase: TaskPhase,
     val nextInMs: Long,
@@ -37,7 +40,7 @@ class TaskRunner(
     private val scope: CoroutineScope,
     private val clock: () -> Long,
     private val random: Random,
-    private val action: suspend () -> Boolean,
+    private val action: suspend () -> CycleResult,
     private val listener: Listener,
 ) {
     interface Listener {
@@ -60,6 +63,7 @@ class TaskRunner(
     private var workCycle = 1
     private var pausedAtMs: Long? = null
     private var actionInFlight = false
+    private var slotWasHeld = false
     private var sent = 0
     private var failed = 0
 
@@ -80,6 +84,8 @@ class TaskRunner(
     ) {
         job?.cancel()
         schedule = plan
+        // A restored session can be overdue, and its late send must also restart the interval.
+        slotWasHeld = plan.isDue(clock())
         jitter = jitterPolicy
         cycles = workRest
         resting = isResting
@@ -196,14 +202,23 @@ class TaskRunner(
     /** Runs to completion even if paused midway, so a message is never left half typed. */
     private suspend fun runCycle() {
         actionInFlight = true
-        val success = try {
+        val result = try {
             withContext(NonCancellable) { action() }
         } finally {
             actionInFlight = false
         }
         val plan = schedule ?: return
-        if (success) sent++ else failed++
-        schedule = plan.advance(clock(), jitter.nextMs(random))
+        if (result == CycleResult.HELD) {
+            // The slot stays due, which is what sends it once, as soon as the screen is valid.
+            slotWasHeld = true
+            listener.onTick(view())
+            delay(TICK_MS)
+            return
+        }
+        if (result == CycleResult.SENT) sent++ else failed++
+        val jitterMs = jitter.nextMs(random)
+        schedule = if (slotWasHeld) plan.restartedAt(clock(), jitterMs) else plan.advance(clock(), jitterMs)
+        slotWasHeld = false
         listener.onPlanChanged()
         listener.onTick(view())
     }

@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
+import android.text.format.DateFormat
 import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -27,6 +28,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.autoclicker.chattask.R
+import com.autoclicker.chattask.core.BarState
+import com.autoclicker.chattask.core.TapTracker
+import com.autoclicker.chattask.core.WolfUi
 import com.autoclicker.chattask.core.formatDuration
 import com.autoclicker.chattask.data.LanguageManager
 import com.autoclicker.chattask.data.SettingsStore
@@ -38,7 +42,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlin.math.abs
+import java.util.Date
 
 /**
  * Foreground service hosting the floating controls.
@@ -54,6 +58,9 @@ class OverlayService : Service() {
     private var overlayAttached = false
     private var shownPhase: TaskPhase? = null
     private var compact = false
+    private var shownBar = BarState.NORMAL
+    private var defaultBarColor = 0
+    private var defaultTextColor = 0
     private lateinit var store: SettingsStore
     private lateinit var wakeLock: PowerManager.WakeLock
     private val texts: Context get() = LanguageManager.localize(this)
@@ -62,6 +69,7 @@ class OverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         store = SettingsStore(this)
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AutoClicker:session")
@@ -83,6 +91,7 @@ class OverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        if (intent?.action == ACTION_RETRY) AutoTaskService.instance?.startOrResume()
         return START_STICKY
     }
 
@@ -94,6 +103,7 @@ class OverlayService : Service() {
     }
 
     override fun onDestroy() {
+        isRunning = false
         scope.cancel()
         applyWakeLock(false)
         if (overlayAttached) windowManager.removeView(binding.root)
@@ -128,6 +138,7 @@ class OverlayService : Service() {
         binding.buttonPause.setOnClickListener { AutoTaskService.instance?.pauseSession() }
         binding.buttonStop.setOnClickListener {
             if (TaskBus.status.value.phase == TaskPhase.IDLE) {
+                AutoTaskService.instance?.onOverlayClosed()
                 stopSelf()
             } else {
                 AutoTaskService.instance?.stopSession()
@@ -139,6 +150,8 @@ class OverlayService : Service() {
             applyOverlaySize()
         }
         applyOverlaySize()
+        defaultBarColor = binding.root.cardBackgroundColor.defaultColor
+        defaultTextColor = binding.textCountdown.currentTextColor
         val drag = DragListener()
         binding.root.setOnTouchListener(drag)
         binding.statusArea.setOnTouchListener(drag)
@@ -190,9 +203,11 @@ class OverlayService : Service() {
             TaskPhase.RUNNING -> formatDuration(status.nextInMs)
             TaskPhase.RESTING -> texts.getString(R.string.overlay_resting, formatDuration(status.nextInMs))
             TaskPhase.PAUSED -> texts.getString(R.string.overlay_paused)
-            TaskPhase.IDLE -> texts.getString(R.string.overlay_ready)
+            TaskPhase.IDLE -> if (status.idleUntilMs > 0) idleText(status) else texts.getString(R.string.overlay_ready)
         }
-        binding.textDetail.text = if (status.notice != 0) {
+        binding.textDetail.text = if (status.barState == BarState.COMMAND_READY) {
+            texts.getString(R.string.overlay_command_ready)
+        } else if (status.notice != 0) {
             texts.getString(status.notice)
         } else {
             texts.getString(
@@ -208,13 +223,44 @@ class OverlayService : Service() {
         val active = status.phase == TaskPhase.RUNNING || status.phase == TaskPhase.RESTING
         binding.buttonStart.isEnabled = !active
         binding.buttonPause.isEnabled = active
-        applyKeepScreenOn(active && status.keepScreenOn)
-        applyWakeLock(active)
+        applyKeepScreenOn((active && status.keepScreenOn) || status.idleKeepScreen)
+        applyWakeLock(active || status.idleUntilMs > 0)
+        applyBarState(status.barState)
         if (status.phase != shownPhase) {
             shownPhase = status.phase
             getSystemService(NotificationManager::class.java)
                 .notify(NOTIFICATION_ID, buildNotification(status.phase))
         }
+    }
+
+    private fun idleText(status: TaskStatus): String = texts.getString(
+        R.string.status_idle_until,
+        DateFormat.getTimeFormat(texts).format(Date(status.idleUntilMs)),
+    )
+
+    /** The words change along with the color, so the color is never the only signal. */
+    private fun applyBarState(state: BarState) {
+        if (state == shownBar) return
+        shownBar = state
+        val color = when (state) {
+            BarState.NORMAL -> null
+            BarState.SEND_SOON -> R.color.bar_soon
+            BarState.COMMAND_READY -> R.color.bar_ready
+        }
+        if (color == null) {
+            binding.root.setCardBackgroundColor(defaultBarColor)
+            binding.textCountdown.setTextColor(defaultTextColor)
+        } else {
+            binding.root.setCardBackgroundColor(getColor(color))
+            binding.textCountdown.setTextColor(getColor(R.color.bar_text))
+        }
+    }
+
+    /** Only ever called from a tap by the user. */
+    private fun openWolf() {
+        val intent = packageManager.getLaunchIntentForPackage(WolfUi.PACKAGE) ?: return
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(intent) }
     }
 
     /** Keeps timers and detection alive while the user-started session is active. */
@@ -277,12 +323,11 @@ class OverlayService : Service() {
         }
 
     private inner class DragListener : View.OnTouchListener {
-        private val slop = ViewConfiguration.get(this@OverlayService).scaledTouchSlop
+        private val tracker = TapTracker(ViewConfiguration.get(this@OverlayService).scaledTouchSlop.toFloat())
         private var startX = 0
         private var startY = 0
         private var touchX = 0f
         private var touchY = 0f
-        private var dragging = false
 
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(view: View, event: MotionEvent): Boolean {
@@ -292,20 +337,21 @@ class OverlayService : Service() {
                     startY = params.y
                     touchX = event.rawX
                     touchY = event.rawY
-                    dragging = false
+                    tracker.down(event.rawX, event.rawY)
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val deltaX = event.rawX - touchX
-                    val deltaY = event.rawY - touchY
-                    if (abs(deltaX) > slop || abs(deltaY) > slop) dragging = true
-                    if (dragging) {
-                        params.x = startX + deltaX.toInt()
-                        params.y = startY + deltaY.toInt()
+                    tracker.move(event.rawX, event.rawY)
+                    if (tracker.isDrag) {
+                        params.x = startX + (event.rawX - touchX).toInt()
+                        params.y = startY + (event.rawY - touchY).toInt()
                         clampToScreen()
                         windowManager.updateViewLayout(binding.root, params)
                     }
                 }
-                MotionEvent.ACTION_UP -> if (compact && !dragging) setCompact(false)
+                MotionEvent.ACTION_UP -> if (tracker.up(event.rawX, event.rawY)) {
+                    // On the badge a tap keeps its expand action, and the full bar then opens WOLF.
+                    if (compact) setCompact(false) else openWolf()
+                }
             }
             return true
         }
@@ -315,7 +361,13 @@ class OverlayService : Service() {
         private const val CHANNEL_ID = "automation"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_SHUTDOWN = "com.autoclicker.chattask.action.SHUTDOWN"
+        const val ACTION_RETRY = "com.autoclicker.chattask.action.RETRY"
         private val SIZE_SCALES = listOf(0.8f, 1f, 1.25f)
+
+        @Volatile
+        var isRunning = false
+            private set
+
         private const val BADGE_TEXT_SP = 12f
         private const val TITLE_TEXT_SP = 16f
         private const val DETAIL_TEXT_SP = 11f

@@ -5,6 +5,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TaskConfigTest {
+    private val own = listOf(CommandEntry("my command"))
+
     @Test
     fun `defaults match the requested schedule and are valid`() {
         val config = TaskConfig()
@@ -12,7 +14,10 @@ class TaskConfigTest {
         assertEquals(79_200, config.workDurationSec)
         assertEquals(7_260, config.restDurationSec)
         assertTrue("x" in config.popupKeywords && "X" in config.popupKeywords)
-        assertTrue(config.validate().isEmpty())
+        assertEquals(listOf(ConfigError.EMPTY_COMMAND), config.validate())
+        assertTrue(config.commands.all { it.text.isEmpty() })
+        assertTrue(config.targetRoom.isEmpty() && config.reactive.room.isEmpty())
+        assertTrue(config.reactive.command.isEmpty())
     }
 
     @Test
@@ -28,39 +33,31 @@ class TaskConfigTest {
         )
         assertEquals(
             listOf(ConfigError.BAD_COMMAND_DELAY),
-            TaskConfig(
-                commands = listOf(CommandEntry("a"), CommandEntry("b", SendMode.DELAYED, 0)),
+            TaskConfig(                commands = listOf(CommandEntry("a"), CommandEntry("b", SendMode.DELAYED, 0)),
             ).validate(),
         )
         assertEquals(
             listOf(ConfigError.SEQUENCE_TOO_LONG),
-            TaskConfig(
-                intervalSec = 60,
+            TaskConfig(                intervalSec = 60,
                 commands = listOf(CommandEntry("a"), CommandEntry("b", SendMode.DELAYED, 52)),
             ).validate(),
         )
-        assertEquals(listOf(ConfigError.ROOM_TOO_LONG), TaskConfig(targetRoom = "9".repeat(65)).validate())
-        assertEquals(listOf(ConfigError.DURATION_TOO_SHORT), TaskConfig(workDurationSec = 60).validate())
+        assertEquals(listOf(ConfigError.ROOM_TOO_LONG), TaskConfig(commands = own, targetRoom = "9".repeat(65)).validate())
+        assertEquals(listOf(ConfigError.DURATION_TOO_SHORT), TaskConfig(commands = own, workDurationSec = 60).validate())
         assertEquals(
             listOf(ConfigError.JITTER_RANGE),
-            TaskConfig(jitterMinSec = 5, jitterMaxSec = 3).validate(),
+            TaskConfig(commands = own, jitterMinSec = 5, jitterMaxSec = 3).validate(),
         )
         assertEquals(
             listOf(ConfigError.JITTER_TOO_LARGE),
-            TaskConfig(intervalSec = 20, workDurationSec = 60, jitterMaxSec = 16).validate(),
+            TaskConfig(commands = own, intervalSec = 20, workDurationSec = 60, jitterMaxSec = 16).validate(),
         )
-        assertEquals(listOf(ConfigError.BAD_PACKAGE), TaskConfig(targetPackage = "not a package").validate())
     }
 
     @Test
     fun `five commands with delays that fit are valid`() {
         val commands = List(5) { CommandEntry("c$it", SendMode.DELAYED, 60) }
         assertTrue(TaskConfig(commands = commands).validate().isEmpty())
-    }
-
-    @Test
-    fun `accepts a real package name`() {
-        assertTrue(TaskConfig(targetPackage = "com.discord").validate().isEmpty())
     }
 
     @Test

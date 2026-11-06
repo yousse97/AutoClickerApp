@@ -5,27 +5,23 @@ import android.app.KeyguardManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction
 import com.autoclicker.chattask.core.InputMatcher
-import com.autoclicker.chattask.core.KeywordSet
-import com.autoclicker.chattask.core.ViewIdMatcher
+import com.autoclicker.chattask.core.TextNormalizer
+import com.autoclicker.chattask.core.WolfUi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.math.abs
-import kotlin.math.max
 import kotlin.random.Random
 
 enum class SendResult {
     SENT,
     SCREEN_LOCKED,
     TARGET_NOT_VISIBLE,
-    WRONG_ROOM,
     NO_INPUT,
     TYPE_FAILED,
     NOT_CONFIRMED,
@@ -39,7 +35,7 @@ enum class SendResult {
  */
 class CommandSender(private val service: AccessibilityService) {
     private val mutex = Mutex()
-    private val sendLabels = KeywordSet(listOf("إرسال", "أرسل", "send"))
+    private val sendLabels = listOf("إرسال", "أرسل", "send").map(TextNormalizer::normalize)
 
     suspend fun send(target: String, command: String): SendResult = mutex.withLock {
         if (!isDeviceReady()) return SendResult.SCREEN_LOCKED
@@ -57,20 +53,27 @@ class CommandSender(private val service: AccessibilityService) {
 
     /** The bottom-most message box, which is where chat apps put it. */
     fun findInput(target: String): AccessibilityNodeInfo? {
-        var best: AccessibilityNodeInfo? = null
+        var byId: AccessibilityNodeInfo? = null
+        var byBounds: AccessibilityNodeInfo? = null
+        var byHint: AccessibilityNodeInfo? = null
         var bestBottom = Int.MIN_VALUE
         for (root in NodeTools.targetRoots(service, target)) {
             NodeTools.walk(root) { node ->
                 if (isUsableInput(node)) {
+                    val isField = node.isEditable || node.className?.contains("EditText") == true
                     val bottom = NodeTools.boundsOf(node).bottom
-                    if (bottom > bestBottom) {
-                        best = node
-                        bestBottom = bottom
+                    when {
+                        WolfUi.entryName(node.viewIdResourceName) == WolfUi.INPUT -> byId = node
+                        isField && bottom > bestBottom -> {
+                            byBounds = node
+                            bestBottom = bottom
+                        }
+                        !isField -> byHint = node
                     }
                 }
             }
         }
-        return best
+        return byId ?: byBounds ?: byHint
     }
 
     private fun isUsableInput(node: AccessibilityNodeInfo): Boolean {
@@ -152,11 +155,13 @@ class CommandSender(private val service: AccessibilityService) {
         return false
     }
 
-    /** Ordered from most to least certain. The row guess runs last as it may hit a wrong icon. */
+    /**
+     * Ordered from most to least certain. There is deliberately no guessing by position, because
+     * the same row in WOLF holds the send-a-gift button and the voice recorder.
+     */
     private fun sendStrategies(target: String): List<suspend () -> Boolean> = listOf(
         { clickNamedSendButton(target) },
         { pressImeEnter(target) },
-        { clickRowButton(target) },
     )
 
     private suspend fun clickNamedSendButton(target: String): Boolean {
@@ -176,71 +181,23 @@ class CommandSender(private val service: AccessibilityService) {
         return input.actionList.any { it.id == enter.id } && input.performAction(enter.id)
     }
 
-    private fun clickRowButton(target: String): Boolean =
-        findRowButton(target)?.let { NodeTools.click(service, it) } == true
-
     private fun findNamedSendButton(target: String): AccessibilityNodeInfo? {
-        val inputBounds = findInput(target)?.let(NodeTools::boundsOf) ?: return null
-        val tolerance = max(inputBounds.height(), MIN_ROW_TOLERANCE_PX)
-        val rowTop = inputBounds.top - tolerance
-        val rowBottom = inputBounds.bottom + tolerance
-        var best: AccessibilityNodeInfo? = null
-        var bestDistance = Int.MAX_VALUE
-        forEachActionable(target) { node, bounds ->
-            val named = sendLabels.matches(node.contentDescription) || sendLabels.matches(node.text) ||
-                ViewIdMatcher.isSend(node.viewIdResourceName)
-            if (named && bounds.centerY() in rowTop..rowBottom) {
-                val distance = abs(bounds.centerY() - inputBounds.centerY())
-                if (distance < bestDistance) {
-                    best = node
-                    bestDistance = distance
-                }
-            }
-        }
-        return best
-    }
-
-    /**
-     * Last resort: the outermost unlabelled button in the input's row, on the side away from it.
-     * Comparing against the input keeps this correct in both RTL and LTR layouts.
-     */
-    private fun findRowButton(target: String): AccessibilityNodeInfo? {
-        val inputBounds = findInput(target)?.let(NodeTools::boundsOf) ?: return null
-        val screenWidth = service.resources.displayMetrics.widthPixels
-        val sendIsOnRight = inputBounds.centerX() < screenWidth / 2
-        var best: AccessibilityNodeInfo? = null
-        var bestEdge = if (sendIsOnRight) Int.MIN_VALUE else Int.MAX_VALUE
-        forEachActionable(target) { node, bounds ->
-            val inRow = bounds.centerY() in inputBounds.top..inputBounds.bottom
-            val plausibleSize = bounds.width() in MIN_BUTTON_PX..(screenWidth * 3 / 10)
-            if (inRow && plausibleSize && node.isClickable && !isOtherComposerIcon(node)) {
-                val better = if (sendIsOnRight) bounds.right > bestEdge else bounds.left < bestEdge
-                if (better) {
-                    best = node
-                    bestEdge = if (sendIsOnRight) bounds.right else bounds.left
-                }
-            }
-        }
-        return best
-    }
-
-    private fun isOtherComposerIcon(node: AccessibilityNodeInfo): Boolean {
-        val description = "${node.viewIdResourceName} ${node.contentDescription}".lowercase()
-        return OTHER_COMPOSER_ICONS.any { it in description }
-    }
-
-    private inline fun forEachActionable(
-        target: String,
-        visit: (AccessibilityNodeInfo, Rect) -> Unit,
-    ) {
+        var byId: AccessibilityNodeInfo? = null
+        var byLabel: AccessibilityNodeInfo? = null
         for (root in NodeTools.targetRoots(service, target)) {
             NodeTools.walk(root) { node ->
                 if (node.isVisibleToUser && node.isEnabled && !node.isEditable) {
-                    visit(node, NodeTools.boundsOf(node))
+                    if (WolfUi.isSendButton(node.viewIdResourceName)) byId = node
+                    if (isSendLabel(node.contentDescription) || isSendLabel(node.text)) byLabel = node
                 }
             }
         }
+        return byId ?: byLabel
     }
+
+    /** The whole label must match, so "إرسال هدية" (send a gift) never counts as send. */
+    private fun isSendLabel(label: CharSequence?): Boolean =
+        !label.isNullOrBlank() && TextNormalizer.normalize(label) in sendLabels
 
     private suspend fun humanPause() = delay(Random.nextLong(HUMAN_PAUSE_MIN_MS, HUMAN_PAUSE_MAX_MS))
 
@@ -252,11 +209,5 @@ class CommandSender(private val service: AccessibilityService) {
         const val CLEAR_TIMEOUT_MS = 1_500L
         const val HUMAN_PAUSE_MIN_MS = 120L
         const val HUMAN_PAUSE_MAX_MS = 320L
-        const val MIN_ROW_TOLERANCE_PX = 120
-        const val MIN_BUTTON_PX = 24
-        val OTHER_COMPOSER_ICONS = listOf(
-            "mic", "voice", "record", "audio", "attach", "emoji", "sticker", "gif", "camera", "plus",
-            "صوت", "تسجيل", "مرفق", "كاميرا", "ملصق", "إيموجي", "رموز",
-        )
     }
 }

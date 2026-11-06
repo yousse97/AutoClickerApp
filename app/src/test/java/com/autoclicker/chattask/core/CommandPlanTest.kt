@@ -87,25 +87,4 @@ class CommandPlanTest {
         assertTrue(cycles.loops)
         assertFalse(WorkRestScheduler(1_000, 0, 100, 10).loops)
     }
-
-    @Test
-    fun `passcode check accepts only the matching value`() {
-        // PBKDF2-HMAC-SHA256 of "secret" with this salt and 1000 rounds.
-        val verifier = PasscodeVerifier(
-            saltHex = "00112233445566778899aabbccddeeff",
-            iterations = 1_000,
-            hashHex = "588372775fb38b5711b6f36b465e293dc7b793e008550ee8a10bb26a8e7f85b8",
-        )
-        assertTrue(verifier.matches("secret"))
-        assertTrue(verifier.matches(" secret "))
-        assertFalse(verifier.matches("Secret"))
-        assertFalse(verifier.matches(""))
-    }
-
-    @Test
-    fun `master passcode matches when provided by the environment`() {
-        val passcode = System.getenv("AUTOCLICKER_PASSCODE") ?: return
-        assertTrue(PasscodeVerifier.MASTER.matches(passcode))
-        assertFalse(PasscodeVerifier.MASTER.matches(passcode + "1"))
-    }
 }

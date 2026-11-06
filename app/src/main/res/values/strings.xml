@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Auto Clicker</string>
     <string name="accessibility_service_label">Auto Clicker task service</string>
-    <string name="accessibility_service_description">Types your chosen command into the chat app you start a session in and closes popups there. It only acts inside that app, only during a session you start, and it sends nothing off this device.</string>
+    <string name="accessibility_service_description">Reads the WOLF screen and acts only inside WOLF, during a session you start. Chat text is not saved, and nothing is sent to the internet.</string>
 
     <string name="section_permissions">Permissions</string>
     <string name="section_task">Task</string>
@@ -22,22 +22,19 @@
     <string name="label_duration_minutes">Work (min)</string>
     <string name="label_jitter_min">Jitter min (sec)</string>
     <string name="label_jitter_max">Jitter max (sec)</string>
-    <string name="label_target">Target app package</string>
-    <string name="helper_target">Leave empty to use the app on screen when you press Start.</string>
     <string name="label_keywords">Dismiss buttons labelled</string>
     <string name="helper_keywords">Separate with commas. Matches whole words on short button labels.</string>
     <string name="label_skip_lists">Ignore buttons inside chat lists</string>
-    <string name="label_keep_screen">Keep screen on while running</string>
+    <string name="label_keep_screen">Keep the screen on while running</string>
     <string name="button_launch">Save and show controls</string>
     <string name="toast_permissions_needed">Grant the accessibility and overlay permissions first.</string>
 
-    <string name="error_empty_command">Enter a command.</string>
+    <string name="error_empty_command">Enter your command.</string>
     <string name="error_command_too_long">The command is too long.</string>
     <string name="error_interval_too_short">Use an interval of at least 10 seconds.</string>
     <string name="error_duration_too_short">Must be at least one interval.</string>
     <string name="error_jitter_range">Min must not be above max.</string>
     <string name="error_jitter_too_large">Max jitter must be at least 5 seconds below the interval.</string>
-    <string name="error_bad_package">Enter a package name such as com.example.chat.</string>
 
     <string name="overlay_ready">Ready</string>
     <string name="overlay_paused">Paused</string>
@@ -47,12 +44,12 @@
     <string name="overlay_pause">Pause</string>
     <string name="overlay_stop">Stop, or close the controls when stopped</string>
 
-    <string name="notice_open_chat">Open the chat first</string>
+    <string name="notice_open_chat">Open a WOLF channel first</string>
     <string name="notice_enable_service">Turn on the accessibility service</string>
     <string name="notice_invalid_settings">Check the settings in the app</string>
     <string name="notice_finished">Session finished</string>
-    <string name="notice_screen_locked">Skipped: screen off or locked</string>
-    <string name="notice_target_hidden">Skipped: chat app not on screen</string>
+    <string name="notice_screen_locked">Waiting: screen off or locked</string>
+    <string name="notice_target_hidden">Waiting: WOLF is not on screen</string>
     <string name="notice_no_input">Skipped: no message box found</string>
     <string name="notice_type_failed">Failed: could not enter text</string>
     <string name="notice_not_confirmed">Failed: send not confirmed</string>
@@ -66,13 +63,6 @@
     <string name="language_switch_label" translatable="false">العربية</string>
     <string name="language_switch_description">Switch language</string>
 
-    <string name="activation_title">Activate the app</string>
-    <string name="activation_message">Send your License ID to the provider, then enter the activation key you receive.</string>
-    <string name="label_passcode">Activation key</string>
-    <string name="button_activate">Activate</string>
-    <string name="error_passcode_empty">Enter the activation key.</string>
-    <string name="error_passcode_wrong">Invalid activation key. Try again.</string>
-    <string name="error_tampered">This copy of the app has been modified and cannot run.</string>
 
     <string name="label_command_numbered">Command %1$d</string>
     <string name="button_add_command">+ Add Command</string>
@@ -83,11 +73,9 @@
 
     <string name="label_rest_hours">Rest (hours)</string>
     <string name="label_rest_minutes">Rest (min)</string>
-    <string name="helper_rest">After a rest the target app reopens and work restarts. Set rest to 0 to stop after one work period.</string>
-    <string name="button_pick_app">Choose</string>
-    <string name="picker_title">Choose the target app</string>
-    <string name="label_room">Target Room Identifier / اسم أو رقم الغرفة</string>
-    <string name="helper_room">Saved on this device only. Enter the room name or number exactly as the app shows it, such as 41110.</string>
+    <string name="helper_rest">After a rest the session continues in WOLF. Set rest to 0 to stop after one work period.</string>
+    <string name="label_room">Channel name or number / اسم أو رقم القناة</string>
+    <string name="helper_room">Saved on this device only. Enter the exact channel name or number as it appears in your own WOLF account. Channels differ between accounts.</string>
 
     <string name="error_too_many_commands">Use at most 5 commands.</string>
     <string name="error_bad_command_delay">Enter a delay from 1 to 3600 seconds.</string>
@@ -96,11 +84,10 @@
 
     <string name="overlay_resting">Rest %1$s</string>
     <string name="notification_resting">Resting</string>
-    <string name="notice_locked">Activate the app first</string>
     <string name="notice_recovering">Reopening the chat app</string>
     <string name="notice_not_launchable">Could not open the target app</string>
     <string name="notice_no_chat">Chat screen not found</string>
-    <string name="notice_room_not_found">Room not found in My Channels</string>
+    <string name="notice_room_not_found">Channel not found in this account</string>
 
     <string name="tab_task1">Task 1 (Primary Periodic)</string>
     <string name="tab_task2">YOUSE 2 (Reactive / Secondary Event)</string>
@@ -111,20 +98,135 @@
     <string name="helper_keywords_reactive">One per line, or separated by commas.</string>
     <string name="label_reaction_command">Reaction command</string>
     <string name="label_restrict_room">Restrict execution strictly to this room / تقييد الإرسال بهذه الغرفة فقط</string>
-    <string name="helper_restrict_room">Commands are sent only while the chat header shows this identifier. If the header shows the room name, enter the name here rather than the number.</string>
-    <string name="label_license_id">License ID / رمز الترخيص</string>
-    <string name="license_privacy">This ID is a one-way code made from your device ID. It reveals no personal data and is never sent anywhere by the app.</string>
-    <string name="button_copy">Copy</string>
-    <string name="toast_copied">Copied</string>
-    <string name="section_admin">Admin Key Generator / مولد مفاتيح التفعيل</string>
-    <string name="button_generate_key">Generate activation key</string>
-    <string name="error_license_id">Enter a License ID such as AB12-CD34-EF56.</string>
-    <string name="error_room_required">Enter the room to restrict to.</string>
+    <string name="helper_restrict_room">Commands go out only in this exact channel. Leave this off to send in any WOLF channel you have open. Private chats are never used.</string>
+    <string name="error_room_required">Enter your channel, or turn off the restriction.</string>
     <string name="error_no_trigger">Enter at least one trigger phrase.</string>
-    <string name="error_no_reaction">Enter the reaction command.</string>
+    <string name="error_no_reaction">Enter your reaction command.</string>
     <string name="overlay_shrink">Shrink to a badge</string>
     <string name="overlay_size">Change size</string>
     <string name="notice_wrong_room">Skipped: not in the target room</string>
     <string name="notice_reaction_failed">YOUSE 2: reaction not sent</string>
     <string name="notice_engine_error">An error was handled, still running</string>
+
+    <string name="helper_keep_screen">Optional. Best used on a charger with low brightness.</string>
+    <string name="button_guide">Setup guide</string>
+    <string name="button_log">Event log</string>
+    <string name="disclosure_title">Before you turn this on</string>
+    <string name="disclosure_message">The service reads the WOLF screen and carries out commands inside WOLF only.\n\nTo know when to wait, it checks the name of the app in front. It does not read, tap or type in any other app.\n\nThe app does not save chat text.\n\nThe app sends no data to the internet.</string>
+    <string name="disclosure_continue">Continue to settings</string>
+    <string name="notice_not_channel">Waiting: not a confirmed WOLF channel</string>
+    <string name="notification_alerts_channel">Session alerts</string>
+    <string name="notification_stopped_title">Auto Clicker stopped</string>
+    <string name="notification_retry">Retry</string>
+    <string name="alert_stopped_locked">The screen stayed off or locked for over 15 minutes. Start the session again by hand.</string>
+    <string name="alert_stopped_relaunch">Your WOLF channel could not be reached after 3 attempts. Nothing was sent.</string>
+    <string name="alert_stopped_failures">5 sends failed in a row.</string>
+    <string name="alert_restore_failed">The session could not be restored. Check that the accessibility service is on, then start again.</string>
+    <string name="log_title">Event log</string>
+    <string name="log_last_send">Last send: %1$s</string>
+    <string name="log_last_error">Last error: %1$s</string>
+    <string name="log_failures">Consecutive failures: %1$d</string>
+    <string name="log_none">None</string>
+    <string name="log_privacy">Stored on this device only. The log holds times and event types, never chat text or screen content.</string>
+    <string name="event_session_started">Session started</string>
+    <string name="event_session_stopped">Session stopped by you</string>
+    <string name="event_session_restored">Session restored</string>
+    <string name="event_restore_failed">Failed: session not restored</string>
+    <string name="event_sent">Sent, confirmed by the box clearing</string>
+    <string name="event_send_failed">Failed: send not completed</string>
+    <string name="event_held_locked">Waiting: screen off or locked</string>
+    <string name="event_held_other_app">Waiting: WOLF not on screen</string>
+    <string name="event_held_not_channel">Not sent: not a confirmed channel</string>
+    <string name="event_held_wrong_room">Not sent: wrong room</string>
+    <string name="event_relaunch_ok">WOLF reopened</string>
+    <string name="event_relaunch_failed">Failed: WOLF not reopened</string>
+    <string name="event_stopped_locked">Stopped: locked over 15 minutes</string>
+    <string name="event_stopped_relaunch">Stopped: 3 failed reopen attempts</string>
+    <string name="event_stopped_failures">Stopped: 5 failed sends in a row</string>
+    <string name="event_reaction_sent">YOUSE 2: reaction sent</string>
+    <string name="event_reaction_failed">YOUSE 2: reaction failed</string>
+    <string name="guide_title">Setup guide</string>
+    <string name="guide_intro">Menu names differ between devices, so the names below may not match yours exactly.</string>
+    <string name="guide_restricted_title">1. Allow restricted settings (Android 13 and later)</string>
+    <string name="guide_restricted_body">Open the app info screen, tap the menu in the top corner, and choose the option to allow restricted settings. If the option is missing, try turning on the accessibility service first, then come back.</string>
+    <string name="guide_open_app_info">Open app info</string>
+    <string name="guide_open_settings">Open settings</string>
+    <string name="guide_accessibility_title">2. Turn on the accessibility service</string>
+    <string name="guide_accessibility_body">In the accessibility settings, find this app, often under installed or downloaded apps, and turn it on.</string>
+    <string name="guide_overlay_title">3. Allow display over other apps</string>
+    <string name="guide_overlay_body">Find this app in the list and allow it to appear on top. The floating timer needs this.</string>
+    <string name="guide_battery_title">4. Exempt the app from battery limits</string>
+    <string name="guide_battery_body">Choose to allow the app to run without battery restrictions, so Android does not stop it in the background.</string>
+    <string name="guide_autostart_title">5. Auto start (some devices)</string>
+    <string name="guide_autostart_body">Some manufacturers add their own auto start or background permission. Look for it in the app info screen or the device manager app, and allow this app.</string>
+    <string name="guide_screen_unavailable">This device does not offer that screen. Look for it in Settings.</string>
+
+    <string name="helper_command">Enter your own command. Nothing is filled in for you.</string>
+    <string name="notice_enter_command">Enter your command in the app first</string>
+    <string name="notice_enter_channel">Enter your channel in the app first</string>
+    <string name="event_room_not_found">Not sent: channel not found in this account</string>
+
+    <string name="button_test_channel">Test channel (sends nothing)</string>
+    <string name="toast_channel_ok">Channel found and verified</string>
+    <string name="notice_tab_not_found">Channels tab not found in WOLF</string>
+    <string name="notice_room_ambiguous">Several channels have this name. Enter a unique name.</string>
+    <string name="event_room_ambiguous">Not sent: several channels share this name</string>
+    <string name="event_tab_not_found">Not sent: Channels tab not found</string>
+
+    <string name="label_schedule">Daily schedule</string>
+    <string name="helper_schedule">Starts and stops every day at the times you pick, in the phone\'s local time. While on, it replaces Work and Rest, whose settings stay saved.</string>
+    <string name="schedule_start">Start: %1$s</string>
+    <string name="schedule_end">End: %1$s</string>
+    <string name="schedule_not_set">Not set</string>
+    <string name="label_idle_screen">Keep screen on during idle hours</string>
+    <string name="label_vibrate">Vibrate 30 seconds before a send when outside WOLF</string>
+    <string name="error_schedule_times">Pick a start time and a different end time.</string>
+    <string name="warning_exact_alarm">Exact alarms are not allowed, so scheduled times may run late. Allow alarms for this app in Settings.</string>
+    <string name="button_check">Check without sending</string>
+    <string name="check_open_wolf">Open WOLF and check</string>
+    <string name="check_pass">Pass</string>
+    <string name="check_fail">Fail</string>
+    <string name="check_info">Not confirmed</string>
+    <string name="check_wolf_open">WOLF is open</string>
+    <string name="check_channel">A WOLF channel is open</string>
+    <string name="check_room">This is your selected channel</string>
+    <string name="check_message_box">Message box found</string>
+    <string name="check_send_button">Send button found</string>
+    <string name="check_fix_accessibility">Turn on the accessibility service.</string>
+    <string name="check_fix_overlay">Allow display over other apps.</string>
+    <string name="check_fix_wolf">Open WOLF, then run this check again.</string>
+    <string name="check_fix_channel">Open a WOLF channel. Private chats are not used.</string>
+    <string name="check_fix_room">Open your selected channel, or correct its name in settings.</string>
+    <string name="check_note_send">WOLF shows this button only after text is typed, and this check never types.</string>
+    <string name="status_running">Running</string>
+    <string name="status_running_reason">Commands are being sent on schedule.</string>
+    <string name="status_attention">Attention</string>
+    <string name="status_send_soon">A command is about to be sent.</string>
+    <string name="status_paused">Temporarily paused</string>
+    <string name="status_rest">Rest period</string>
+    <string name="status_rest_left">Time left: %1$s</string>
+    <string name="status_idle">Idle</string>
+    <string name="status_idle_until">Idle until %1$s</string>
+    <string name="status_error">Stopped because of an error</string>
+    <string name="status_error_reason">Open the event log for the reason.</string>
+    <string name="status_stopped">Stopped</string>
+    <string name="status_stopped_reason">Nothing is running.</string>
+    <string name="status_next_command">Next command: %1$s</string>
+    <string name="status_schedule_stop">Schedule stops at %1$s</string>
+    <string name="status_schedule_start">Schedule starts at %1$s</string>
+    <string name="overlay_command_ready">Command ready, return to WOLF</string>
+    <string name="notice_idle_outside_hours">Outside the daily schedule hours</string>
+    <string name="alert_idle_screen_off">The screen turned off during idle hours. If it is locked at the next start, the 15 minute rule applies.</string>
+    <string name="event_popup_trigger">YOUSE 2: popup trigger detected</string>
+    <string name="event_popup_unverified">YOUSE 2: popup sender cannot be verified</string>
+    <string name="event_schedule_start">Schedule: started</string>
+    <string name="event_schedule_stop">Schedule: stopped, now idle</string>
+    <string name="event_schedule_missed">Schedule: start missed</string>
+    <string name="event_idle_screen_off">Idle: screen turned off</string>
+    <string name="event_check_passed">Check without sending: passed</string>
+    <string name="event_check_failed">Check without sending: problems found</string>
+    <string name="event_killed_memory">App closed by Android: low memory</string>
+    <string name="event_killed_system">App closed by the phone\'s system</string>
+    <string name="event_crashed">App crashed</string>
+    <string name="event_stopped_user">App closed from recent apps or settings</string>
 </resources>

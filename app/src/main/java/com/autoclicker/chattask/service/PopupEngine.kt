@@ -7,6 +7,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.autoclicker.chattask.core.ClickGuard
 import com.autoclicker.chattask.core.KeywordSet
 import com.autoclicker.chattask.core.ViewIdMatcher
+import com.autoclicker.chattask.core.WolfUi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -71,6 +72,7 @@ class PopupEngine(
         val now = SystemClock.elapsedRealtime()
         if (full) lastFullScanMs = now
         for (root in NodeTools.targetRoots(service, active.target)) {
+            if (isLogoutDialog(root)) return false
             val node = findByKeyword(root, active) ?: if (full) findByWalk(root, active) else null
             if (node == null || !guard.allow(signature(node), now)) continue
             if (NodeTools.click(service, node)) {
@@ -79,6 +81,12 @@ class PopupEngine(
             }
         }
         return false
+    }
+
+    /** WOLF's logout dialog confirms with the word "تم", so it must never be dismissed. */
+    private fun isLogoutDialog(root: AccessibilityNodeInfo): Boolean {
+        val titles = root.findAccessibilityNodeInfosByViewId(WolfUi.DIALOG_TITLE_ID).orEmpty()
+        return titles.any { WolfUi.isLogoutTitle(it.text) }
     }
 
     private fun findByKeyword(root: AccessibilityNodeInfo, active: Params): AccessibilityNodeInfo? {
