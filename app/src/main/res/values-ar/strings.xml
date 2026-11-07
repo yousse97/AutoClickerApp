@@ -259,4 +259,14 @@
     <string name="button_discard">المغادرة بدون حفظ</string>
     <string name="permission_exact_alarm">المنبهات الدقيقة</string>
     <string name="status_schedule_needed">حدد جدولًا للبدء</string>
+    <string name="page_about">حول التطبيق</string>
+    <string name="about_version">الإصدار %1$s (البناء %2$d)</string>
+    <string name="about_whats_new_title">ما الجديد</string>
+    <string name="about_whats_new">• قائمة جديدة بصفحات إعدادات منفصلة، وصفحة كل الإعدادات، وصفحة حول التطبيق هذه\n• شاشة رئيسية جديدة تعرض الحالة والتنبيهات وزر البدء والإيقاف\n• لكل أمر فاصله الزمني وجدوله اليومي الخاص، وفق الساعة الفعلية\n• العودة إلى WOLF قبل 5 ثوانٍ من الإرسال المجدول\n• الأمر اليومي بدون أوقات صحيحة يبقى في الانتظار حتى تحددها\n• مؤقت عائم بتصميم جديد مع خيار الحجم، وسمة زرقاء، وأيقونة جديدة</string>
+    <string name="about_releases">الإصدارات</string>
+    <string name="about_no_browser">لا يوجد متصفح لفتح هذه الصفحة.</string>
+    <string name="about_privacy_title">الخصوصية</string>
+    <string name="about_privacy">تُحفظ الإعدادات وسجل الأحداث على هذا الجهاز فقط، والنسخ الاحتياطي معطل. أسماء القنوات مشفرة. يضم السجل الأوقات وأنواع الأحداث فقط، ولا يضم نصوص المحادثات. لا يملك التطبيق إذن الوصول إلى الإنترنت.</string>
+    <string name="about_notice_title">تطبيق غير رسمي</string>
+    <string name="about_notice">YOUSE TIMER تطبيق غير رسمي، ولا يتبع WOLF ولا يحظى باعتمادها.</string>
 </resources>

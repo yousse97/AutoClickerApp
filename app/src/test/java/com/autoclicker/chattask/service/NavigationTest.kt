@@ -30,6 +30,7 @@ class NavigationTest {
         assertEquals(Destination.Page(SettingsPage.HELP), destinationOf(R.id.menuHelp))
         assertEquals(Destination.Log, destinationOf(R.id.menuLog))
         assertEquals(Destination.Page(SettingsPage.ALL), destinationOf(R.id.menuAll))
+        assertEquals(Destination.About, destinationOf(R.id.menuAbout))
         assertNull(destinationOf(0))
     }
 

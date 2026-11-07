@@ -11,9 +11,8 @@ android {
         applicationId = "com.autoclicker.chattask"
         minSdk = 26
         targetSdk = 34
-        // The name is lower than the earlier 1.1.0, so the code must keep rising for updates.
-        versionCode = 3
-        versionName = "1.0.1"
+        versionCode = 4
+        versionName = "1.2.0"
     }
 
     buildTypes {

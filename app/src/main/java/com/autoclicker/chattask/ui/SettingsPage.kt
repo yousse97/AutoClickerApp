@@ -45,6 +45,7 @@ enum class SettingsPage(@StringRes val title: Int, val sections: List<SettingsSe
 sealed interface Destination {
     data class Page(val page: SettingsPage) : Destination
     data object Log : Destination
+    data object About : Destination
 }
 
 /** Where each menu item goes. */
@@ -56,6 +57,7 @@ fun destinationOf(@IdRes item: Int): Destination? = when (item) {
     R.id.menuHelp -> Destination.Page(SettingsPage.HELP)
     R.id.menuLog -> Destination.Log
     R.id.menuAll -> Destination.Page(SettingsPage.ALL)
+    R.id.menuAbout -> Destination.About
     else -> null
 }
 

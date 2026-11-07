@@ -75,6 +75,7 @@ class MainActivity : AppCompatActivity() {
             when (val destination = destinationOf(item.itemId)) {
                 is Destination.Page -> openPage(destination.page)
                 Destination.Log -> startActivity(Intent(this, LogActivity::class.java))
+                Destination.About -> startActivity(Intent(this, AboutActivity::class.java))
                 null -> Unit
             }
             false

@@ -7,4 +7,5 @@
     <item android:id="@+id/menuHelp" android:title="@string/page_help" />
     <item android:id="@+id/menuLog" android:title="@string/page_log" />
     <item android:id="@+id/menuAll" android:title="@string/page_all" />
+    <item android:id="@+id/menuAbout" android:title="@string/page_about" />
 </menu>

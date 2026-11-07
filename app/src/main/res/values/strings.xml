@@ -262,4 +262,14 @@
     <string name="button_discard">Leave without saving</string>
     <string name="permission_exact_alarm">Exact alarms</string>
     <string name="status_schedule_needed">Set a schedule to start</string>
+    <string name="page_about">About</string>
+    <string name="about_version">Version %1$s (build %2$d)</string>
+    <string name="about_whats_new_title">What\'s new</string>
+    <string name="about_whats_new">• New menu with separate settings pages, All Settings, and this About page\n• New Home screen with status, warnings, and Start and Stop\n• Each command has its own interval and daily schedule, following the real clock\n• Returns to WOLF 5 seconds before a scheduled send\n• A Daily command without valid times stays idle until you set them\n• Redesigned floating timer with a size setting, a blue theme, and a new icon</string>
+    <string name="about_releases">Releases</string>
+    <string name="about_no_browser">No browser is available to open this page.</string>
+    <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy">Settings and the event log are stored only on this device, and backups are turned off. Channel names are encrypted. The log holds times and event types, never chat text. The app has no internet permission.</string>
+    <string name="about_notice_title">Unofficial app</string>
+    <string name="about_notice">YOUSE TIMER is an unofficial app. It is not affiliated with or endorsed by WOLF.</string>
 </resources>
