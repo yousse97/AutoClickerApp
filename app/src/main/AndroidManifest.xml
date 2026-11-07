@@ -14,12 +14,17 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
-    <!-- WOLF to reopen it, and the launcher to recognise the home screen. -->
+    <!-- WOLF to reopen it, the launcher to recognise the home screen, and browsers for About. -->
     <queries>
         <package android:name="com.palringo.android" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 
