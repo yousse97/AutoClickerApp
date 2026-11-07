@@ -89,6 +89,10 @@ class MainActivity : AppCompatActivity() {
         }
         binding.buttonCheck.setOnClickListener { runCheck(openWolf = false) }
         showOverlaySize()
+        binding.switchReturn.setOnCheckedChangeListener { _, checked ->
+            store.returnBeforeSend = checked
+            AutoTaskService.instance?.reloadSettings()
+        }
         binding.buttonRecover.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -237,6 +241,7 @@ class MainActivity : AppCompatActivity() {
         switchKeepScreen.isChecked = config.keepScreenOn
         switchIdleScreen.isChecked = config.keepScreenWhenIdle
         switchVibrate.isChecked = config.vibrateBeforeSend
+        switchReturn.isChecked = config.returnBeforeSend
     }
 
     private fun readConfig() = with(binding) {
@@ -255,6 +260,7 @@ class MainActivity : AppCompatActivity() {
             restrictToRoom = checkRestrictRoom.isChecked,
             keepScreenWhenIdle = switchIdleScreen.isChecked,
             vibrateBeforeSend = switchVibrate.isChecked,
+            returnBeforeSend = switchReturn.isChecked,
             reactive = ReactiveConfig(
                 enabled = switchReactive.isChecked,
                 triggers = TaskConfig.parseKeywords(inputTriggers.text?.toString().orEmpty()),

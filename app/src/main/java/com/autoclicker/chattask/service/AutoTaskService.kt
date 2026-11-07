@@ -77,7 +77,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         popups = PopupEngine(this) { TaskBus.update { it.copy(popups = it.popups + 1) } }
         popups.launchIn(scope, nodeDispatcher)
         navigator = RoomNavigator(this, popups)
-        reactive = ReactiveEngine(this, sender, navigator, ::onReactionFinished, ::logPopup, ::navigateForPopup)
+        reactive = ReactiveEngine(this, sender, navigator, ::onReactionFinished, ::navigateForPopup)
         reactive.launchIn(scope, nodeDispatcher)
         runner = TaskRunner(
             scope = scope,
@@ -113,6 +113,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         val config = store.loadConfig()
         scheduleDriver.config = config
         bar.vibrate = config.vibrateBeforeSend
+        bar.returnBeforeSend = config.returnBeforeSend
         ScheduleKeeper.arm(this, config)
         tickSchedule()
     }
@@ -293,9 +294,13 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             val foreground = NodeTools.foreground(this)
             val view = runner.view()
             val idle = view.allIdle && !reactive.hasPending
-            bar.update(view, phase == TaskPhase.RUNNING && !idle, foreground)
+            val returnNow = bar.update(view, phase == TaskPhase.RUNNING && !idle, foreground)
             scheduleDriver.tickSession(idle)
             if (relaunching) continue
+            if (returnNow && (foreground != Foreground.WOLF || session?.config?.restrictToRoom == true)) {
+                Log.i(EventLog.TAG, "return to WOLF, send in ${view.nextInMs}ms from $foreground")
+                relaunch()
+            }
             val now = SystemClock.elapsedRealtime()
             handle(guard.observe(foreground, phase == TaskPhase.RESTING || idle, now))
         }
@@ -323,8 +328,6 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         EventLog.add(this, type)
         Alerts.post(this, message, offerRetry)
     }
-
-    private fun logPopup() = Notices.logPopup(this)
 
     private fun navigateForPopup(room: String) {
         scope.launch {
@@ -370,7 +373,6 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         return CycleResult.FAILED
     }
 
-    /** A command that cannot go out yet keeps its slot, which sends it once when back. */
     private suspend fun sendCommand(current: Session, index: Int): CycleResult {
         val command = current.config.commands[index].text
         val outcome = withContext(nodeDispatcher) { cycle.send(current.config, command) }
@@ -414,7 +416,6 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         }
     }
 
-    /** Opens WOLF only after a tap on the check dialog. */
     fun checkWithoutSending(openWolf: Boolean, onDone: (List<CheckResult>) -> Unit) {
         scope.launch {
             if (openWolf) ReadOnlyChecker.openWolf(this@AutoTaskService)

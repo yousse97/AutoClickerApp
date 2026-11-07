@@ -26,6 +26,21 @@ class TapTracker(private val slopPx: Float) {
     }
 }
 
+/**
+ * Decides when to bring the user back to WOLF ahead of a send. It acts once per command, and the
+ * due time it is given already includes jitter. A locked phone is never pulled.
+ */
+class ReturnPlanner(private val leadMs: Long = 5_000) {
+    private var returnedSlot: Long? = null
+
+    fun shouldReturn(slot: Long, nextInMs: Long, working: Boolean, foreground: Foreground, enabled: Boolean): Boolean {
+        val locked = foreground == Foreground.LOCKED
+        if (!enabled || !working || locked || nextInMs > leadMs || returnedSlot == slot) return false
+        returnedSlot = slot
+        return true
+    }
+}
+
 enum class BarState { NORMAL, SEND_SOON, COMMAND_READY }
 
 /** Warns someone outside WOLF that a send is coming, with one vibration per command. */

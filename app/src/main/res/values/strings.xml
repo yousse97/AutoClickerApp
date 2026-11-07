@@ -235,4 +235,7 @@
     <string name="size_small">Small</string>
     <string name="size_medium">Medium</string>
     <string name="size_large">Large</string>
+
+    <string name="label_return_before_send">Return to WOLF 5 seconds before sending</string>
+    <string name="helper_return_before_send">Opens WOLF from any app and goes to your channel. If off, a command waits until you return to WOLF.</string>
 </resources>

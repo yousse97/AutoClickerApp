@@ -66,6 +66,49 @@ class ScheduleAndOverlayTest {
     }
 
     @Test
+    fun `return fires inside the last 5 seconds, not before`() {
+        val planner = ReturnPlanner()
+        assertFalse(planner.shouldReturn(1, 5_001, true, Foreground.OTHER_APP, true))
+        assertTrue(planner.shouldReturn(1, 5_000, true, Foreground.OTHER_APP, true))
+    }
+
+    @Test
+    fun `return fires once per command, including from home and inside WOLF`() {
+        val planner = ReturnPlanner()
+        assertTrue(planner.shouldReturn(1, 4_000, true, Foreground.HOME, true))
+        assertFalse(planner.shouldReturn(1, 3_000, true, Foreground.HOME, true))
+        assertFalse(planner.shouldReturn(1, 0, true, Foreground.OTHER_APP, true))
+        assertTrue(planner.shouldReturn(2, 4_000, true, Foreground.WOLF, true))
+    }
+
+    @Test
+    fun `an overdue command still returns the user once`() {
+        val planner = ReturnPlanner()
+        assertTrue(planner.shouldReturn(1, 0, true, Foreground.OTHER_APP, true))
+        assertFalse(planner.shouldReturn(1, 0, true, Foreground.OTHER_APP, true))
+    }
+
+    @Test
+    fun `with the setting off the user is never pulled, and the command stays pending`() {
+        val planner = ReturnPlanner()
+        assertFalse(planner.shouldReturn(1, 3_000, true, Foreground.OTHER_APP, false))
+        assertFalse(planner.shouldReturn(1, 0, true, Foreground.OTHER_APP, false))
+        assertEquals(BarState.COMMAND_READY, PreSendAlert().barState(0, true, Foreground.OTHER_APP))
+    }
+
+    @Test
+    fun `a locked phone is never pulled, and it can still return after unlocking`() {
+        val planner = ReturnPlanner()
+        assertFalse(planner.shouldReturn(1, 3_000, true, Foreground.LOCKED, true))
+        assertTrue(planner.shouldReturn(1, 2_000, true, Foreground.OTHER_APP, true))
+    }
+
+    @Test
+    fun `nothing returns while idle or paused`() {
+        assertFalse(ReturnPlanner().shouldReturn(1, 3_000, false, Foreground.OTHER_APP, true))
+    }
+
+    @Test
     fun `vibration can be turned off`() {
         assertFalse(PreSendAlert().shouldVibrate(1, 20_000, true, Foreground.OTHER_APP, false))
     }

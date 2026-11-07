@@ -29,7 +29,6 @@ class ReactiveEngine(
     private val sender: CommandSender,
     private val navigator: RoomNavigator,
     private val onResult: (Boolean) -> Unit,
-    private val onPopup: () -> Unit,
     private val needRoom: (String) -> Unit,
 ) {
     private class Params(val target: String, val config: ReactiveConfig, val triggers: List<String>)
@@ -77,7 +76,7 @@ class ReactiveEngine(
         val inPopup = matches.filter(::isPopupNode)
         if (popupTrigger.observe(inPopup.isNotEmpty(), SystemClock.elapsedRealtime())) {
             pendingPopup = true
-            onPopup()
+            Notices.logPopup(service)
             traceStructure(inPopup.first())
         }
         if (pendingPopup) answerPopup(active)

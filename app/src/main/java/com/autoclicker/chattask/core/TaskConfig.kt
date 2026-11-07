@@ -17,6 +17,8 @@ data class TaskConfig(
     val reactive: ReactiveConfig = ReactiveConfig(),
     val keepScreenWhenIdle: Boolean = true,
     val vibrateBeforeSend: Boolean = true,
+    /** Bring the user to WOLF 5 seconds before a send. Otherwise sends wait for them. */
+    val returnBeforeSend: Boolean = true,
     /** Ignore matches inside scrolling lists, so chat messages reading "تم" are never clicked. */
     val skipListItems: Boolean = true,
     val keepScreenOn: Boolean = false,

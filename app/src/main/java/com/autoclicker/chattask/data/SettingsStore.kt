@@ -31,6 +31,10 @@ class SettingsStore(context: Context) {
         context.applicationContext.getSharedPreferences("session", Context.MODE_PRIVATE)
     private val secure = SecureStore(context)
 
+    var returnBeforeSend: Boolean
+        get() = prefs.getBoolean(KEY_RETURN_BEFORE_SEND, true)
+        set(value) = prefs.edit().putBoolean(KEY_RETURN_BEFORE_SEND, value).apply()
+
     var overlayX: Int
         get() = prefs.getInt(KEY_OVERLAY_X, NO_POSITION)
         set(value) = prefs.edit().putInt(KEY_OVERLAY_X, value).apply()
@@ -80,6 +84,7 @@ class SettingsStore(context: Context) {
                 ?: defaults.popupKeywords,
             keepScreenWhenIdle = prefs.getBoolean(KEY_IDLE_SCREEN, true),
             vibrateBeforeSend = prefs.getBoolean(KEY_VIBRATE, true),
+            returnBeforeSend = returnBeforeSend,
             targetRoom = secure.taskRoom,
             restrictToRoom = secure.restrictTaskRoom,
             reactive = ReactiveConfig(
@@ -110,6 +115,7 @@ class SettingsStore(context: Context) {
             .putBoolean(KEY_SCHEDULE_ENABLED, false)
             .putBoolean(KEY_IDLE_SCREEN, config.keepScreenWhenIdle)
             .putBoolean(KEY_VIBRATE, config.vibrateBeforeSend)
+            .putBoolean(KEY_RETURN_BEFORE_SEND, config.returnBeforeSend)
             .putBoolean(KEY_REACTIVE_ENABLED, config.reactive.enabled)
             .putString(KEY_REACTIVE_TRIGGERS, config.reactive.triggers.joinToString("\n"))
             .putString(KEY_REACTIVE_COMMAND, config.reactive.command)
@@ -250,6 +256,7 @@ class SettingsStore(context: Context) {
         private const val KEY_SCHEDULE_END = "schedule_end"
         private const val KEY_IDLE_SCREEN = "idle_screen"
         private const val KEY_VIBRATE = "vibrate"
+        private const val KEY_RETURN_BEFORE_SEND = "return_before_send"
         private const val KEY_REACTIVE_ENABLED = "reactive_enabled"
         private const val KEY_REACTIVE_TRIGGERS = "reactive_triggers"
         private const val KEY_REACTIVE_COMMAND = "reactive_command"

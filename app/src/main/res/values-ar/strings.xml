@@ -235,4 +235,7 @@
     <string name="size_small">صغير</string>
     <string name="size_medium">متوسط</string>
     <string name="size_large">كبير</string>
+
+    <string name="label_return_before_send">العودة إلى WOLF قبل الإرسال بـ5 ثوانٍ</string>
+    <string name="helper_return_before_send">يفتح WOLF من أي تطبيق وينتقل إلى قناتك. عند تعطيله، ينتظر الأمر حتى تعود إلى WOLF.</string>
 </resources>

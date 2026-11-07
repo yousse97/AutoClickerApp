@@ -487,6 +487,19 @@
         </RadioGroup>
 
         <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchReturn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/label_return_before_send" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/helper_return_before_send"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/switchVibrate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
