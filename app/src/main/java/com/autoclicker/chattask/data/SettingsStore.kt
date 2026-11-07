@@ -3,6 +3,7 @@ package com.autoclicker.chattask.data
 import android.content.Context
 import com.autoclicker.chattask.core.CommandEntry
 import com.autoclicker.chattask.core.DailySchedule
+import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.TaskConfig
@@ -31,6 +32,11 @@ class SettingsStore(context: Context) {
     var legacySchedulePrompt: Boolean
         get() = prefs.contains(KEY_DURATION) && !prefs.getBoolean(KEY_SCHEDULE_PROMPT_DONE, false)
         set(value) = prefs.edit().putBoolean(KEY_SCHEDULE_PROMPT_DONE, !value).apply()
+
+    /** Written only by the mode choice, which refuses while a session runs. Pages never touch it. */
+    var operatingMode: OperatingMode
+        get() = OperatingMode.fromStored(prefs.getString(KEY_MODE, null))
+        set(value) = prefs.edit().putString(KEY_MODE, value.name).apply()
 
     var returnBeforeSend: Boolean
         get() = prefs.getBoolean(KEY_RETURN_BEFORE_SEND, true)
@@ -73,6 +79,7 @@ class SettingsStore(context: Context) {
         val legacyCommand = prefs.getString(KEY_COMMAND, null)
             ?.let { listOf(CommandEntry(it, legacyInterval)) }
         return TaskConfig(
+            mode = operatingMode,
             commands = prefs.getString(KEY_COMMANDS, null)
                 ?.let { decodeCommands(it, legacyInterval, legacySchedule) }
                 ?: legacyCommand ?: defaults.commands,
@@ -87,12 +94,14 @@ class SettingsStore(context: Context) {
             targetRoom = secure.taskRoom,
             restrictToRoom = secure.restrictTaskRoom,
             reactive = ReactiveConfig(
-                enabled = prefs.getBoolean(KEY_REACTIVE_ENABLED, false),
                 triggers = prefs.getString(KEY_REACTIVE_TRIGGERS, null)?.let(TaskConfig::parseKeywords)
                     ?: defaults.reactive.triggers,
                 command = prefs.getString(KEY_REACTIVE_COMMAND, null).orEmpty(),
                 restrictToRoom = secure.restrictReactiveRoom,
                 room = secure.reactiveRoom,
+                returnBeforeSend = prefs.getBoolean(KEY_REPLY_RETURN, defaults.reactive.returnBeforeSend),
+                hours = prefs.getString(KEY_REPLY_HOURS, null)?.let(::decodeReplyHours)
+                    ?: defaults.reactive.hours,
             ),
             skipListItems = prefs.getBoolean(KEY_SKIP_LISTS, defaults.skipListItems),
             keepScreenOn = prefs.getBoolean(KEY_KEEP_SCREEN, defaults.keepScreenOn),
@@ -113,9 +122,10 @@ class SettingsStore(context: Context) {
             .putBoolean(KEY_IDLE_SCREEN, config.keepScreenWhenIdle)
             .putBoolean(KEY_VIBRATE, config.vibrateBeforeSend)
             .putBoolean(KEY_RETURN_BEFORE_SEND, config.returnBeforeSend)
-            .putBoolean(KEY_REACTIVE_ENABLED, config.reactive.enabled)
             .putString(KEY_REACTIVE_TRIGGERS, config.reactive.triggers.joinToString("\n"))
             .putString(KEY_REACTIVE_COMMAND, config.reactive.command)
+            .putBoolean(KEY_REPLY_RETURN, config.reactive.returnBeforeSend)
+            .putString(KEY_REPLY_HOURS, encodeReplyHours(config.reactive.hours))
             .putBoolean(KEY_SKIP_LISTS, config.skipListItems)
             .putBoolean(KEY_KEEP_SCREEN, config.keepScreenOn)
             .apply()
@@ -166,6 +176,11 @@ class SettingsStore(context: Context) {
             }
             return array.toString()
         }
+
+        /** Auto reply's hours use the same stored form as a command's. */
+        fun encodeReplyHours(hours: CommandEntry): String = encodeCommands(listOf(hours))
+
+        fun decodeReplyHours(json: String): CommandEntry? = decodeCommands(json)?.firstOrNull()
 
         fun encodeTimers(timers: List<TimerOffset?>): String {
             val array = JSONArray()
@@ -240,7 +255,9 @@ class SettingsStore(context: Context) {
         private const val KEY_VIBRATE = "vibrate"
         private const val KEY_SCHEDULE_PROMPT_DONE = "schedule_prompt_done"
         private const val KEY_RETURN_BEFORE_SEND = "return_before_send"
-        private const val KEY_REACTIVE_ENABLED = "reactive_enabled"
+        private const val KEY_MODE = "operating_mode"
+        private const val KEY_REPLY_RETURN = "reply_return_before_send"
+        private const val KEY_REPLY_HOURS = "reply_hours"
         private const val KEY_REACTIVE_TRIGGERS = "reactive_triggers"
         private const val KEY_REACTIVE_COMMAND = "reactive_command"
         private const val KEY_INTERVAL = "interval_sec"

@@ -4,6 +4,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.ConfigError
+import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.TaskConfig
 
 /** One group of settings. Its own page and All Settings show the same section. */
@@ -69,9 +70,26 @@ enum class HomeWarning(@StringRes val text: Int, val page: SettingsPage) {
     BATTERY(R.string.warning_battery, SettingsPage.HELP),
     COMMANDS(R.string.warning_commands, SettingsPage.COMMANDS),
     SCHEDULE(R.string.warning_schedule, SettingsPage.COMMANDS),
+    REPLY_SCHEDULE(R.string.warning_reply_schedule, SettingsPage.AUTO_REPLY),
     CHANNEL(R.string.warning_channel, SettingsPage.CHANNEL),
     AUTO_REPLY(R.string.warning_auto_reply, SettingsPage.AUTO_REPLY),
+    ;
+
+    /** The others are worth showing, but none of them stops a session from running. */
+    val blocksStart: Boolean get() = this !in OPTIONAL
+
+    private companion object {
+        val OPTIONAL = setOf(NOTIFICATIONS, BATTERY, SCHEDULE, REPLY_SCHEDULE)
+    }
 }
+
+@get:StringRes
+val OperatingMode.title: Int
+    get() = if (this == OperatingMode.AUTO_REPLY) R.string.mode_auto_reply else R.string.mode_scheduled
+
+@get:StringRes
+val OperatingMode.shortTitle: Int
+    get() = if (this == OperatingMode.AUTO_REPLY) R.string.mode_auto_reply_short else R.string.mode_scheduled_short
 
 data class PermissionState(
     val accessibility: Boolean,
@@ -88,7 +106,9 @@ fun homeWarnings(config: TaskConfig, permissions: PermissionState): List<HomeWar
     val errors = config.validate()
     fun inSection(kind: SettingsSectionKind) = errors.any { it in kind.errors }
     if (inSection(SettingsSectionKind.COMMANDS)) add(HomeWarning.COMMANDS)
-    if (config.needsSchedule) add(HomeWarning.SCHEDULE)
+    if (config.needsSchedule) {
+        add(if (config.mode == OperatingMode.AUTO_REPLY) HomeWarning.REPLY_SCHEDULE else HomeWarning.SCHEDULE)
+    }
     if (inSection(SettingsSectionKind.CHANNEL)) add(HomeWarning.CHANNEL)
     if (inSection(SettingsSectionKind.AUTO_REPLY)) add(HomeWarning.AUTO_REPLY)
 }

@@ -30,7 +30,10 @@ data class RunnerView(
     val nextIndex: Int? = null,
     val nextTotalMs: Long = 0,
     val commands: List<CommandView> = emptyList(),
-)
+) {
+    /** Auto reply has no countdown to show, only whether its hours are active. */
+    fun withoutTimers() = copy(nextInMs = 0, nextIndex = null, nextTotalMs = 0, commands = emptyList())
+}
 
 /**
  * The send loop. All methods must be called on the thread of [scope].

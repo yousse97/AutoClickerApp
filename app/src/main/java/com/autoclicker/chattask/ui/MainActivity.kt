@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -21,7 +20,6 @@ import com.autoclicker.chattask.data.LanguageManager
 import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.ActivityMainBinding
 import com.autoclicker.chattask.service.AutoTaskService
-import com.autoclicker.chattask.service.OverlayService
 import com.autoclicker.chattask.service.TaskBus
 import com.autoclicker.chattask.service.TaskPhase
 import kotlinx.coroutines.delay
@@ -33,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var store: SettingsStore
     private lateinit var statusCard: StatusCardView
     private var config = TaskConfig()
+    private lateinit var modeChoice: ModeChoice
     private var warnings: List<HomeWarning> = emptyList()
     private var detachedTicks = 0
 
@@ -47,12 +46,13 @@ class MainActivity : AppCompatActivity() {
         store = SettingsStore(this)
         config = store.loadConfig()
         statusCard = StatusCardView(this, binding)
+        modeChoice = ModeChoice(binding.modeChoice, store, ::refresh)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
                     val status = TaskBus.status.value
-                    statusCard.render(status, config.commands)
+                    statusCard.render(status, config)
                     val running = status.phase != TaskPhase.IDLE
                     binding.buttonStartStop.setText(if (running) R.string.button_stop else R.string.button_start)
                     showRecovery()
@@ -95,6 +95,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        modeChoice.show()
+        refresh()
+    }
+
+    private fun refresh() {
         config = store.loadConfig()
         warnings = homeWarnings(config, readPermissions(this))
         binding.cardWarning.visibility = if (warnings.isEmpty()) View.GONE else View.VISIBLE
@@ -119,24 +124,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startOrStop() {
-        val service = AutoTaskService.instance
         if (TaskBus.status.value.phase != TaskPhase.IDLE) {
-            service?.stopSession()
+            AutoTaskService.instance?.stopSession()
             return
         }
-        val blocker = warnings.firstOrNull { it !in OPTIONAL_WARNINGS }
-        when {
-            blocker != null -> {
-                Toast.makeText(this, blocker.text, Toast.LENGTH_LONG).show()
-                openPage(blocker.page, showErrors = true)
-            }
-            service == null -> Toast.makeText(this, R.string.toast_permissions_needed, Toast.LENGTH_LONG).show()
-            // Finishing frees memory and leaves no recents card, as both were behind process kills.
-            OverlayService.start(this) -> {
-                service.startFromHome()
-                finishAndRemoveTask()
-            }
-        }
+        SessionControl.start(this) { openPage(it.page, showErrors = true) }
     }
 
     /**
@@ -156,8 +148,5 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         const val STATUS_REFRESH_MS = 1_000L
         const val RECOVERY_DELAY_TICKS = 10
-
-        /** Worth showing, but none of these stops a session from running. */
-        val OPTIONAL_WARNINGS = setOf(HomeWarning.NOTIFICATIONS, HomeWarning.BATTERY, HomeWarning.SCHEDULE)
     }
 }

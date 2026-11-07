@@ -17,12 +17,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 /**
- * YOUSE 2: watches the target app for trigger phrases and sends the reaction command.
- *
- * It has its own loop and no link to the Task 1 timer. Sends share [CommandSender]'s lock, so a
- * reaction waits for a message being typed and never mixes with it.
+ * Auto reply: watches the target app for trigger phrases and sends the reaction command, but only
+ * during its active hours. It is configured only in Auto reply mode, and has no link to the timers.
  */
 class ReactiveEngine(
     private val service: AccessibilityService,
@@ -40,7 +39,8 @@ class ReactiveEngine(
     @Volatile private var pendingPopup = false
 
     /** True while a popup response waits, which keeps the session out of idle. */
-    val hasPending: Boolean get() = pendingPopup
+    val hasPending: Boolean
+        get() = pendingPopup && params?.config?.isActive(LocalDateTime.now()) == true
 
     fun launchIn(scope: CoroutineScope, dispatcher: CoroutineDispatcher): Job =
         scope.launch(dispatcher) {
@@ -56,11 +56,12 @@ class ReactiveEngine(
             }
         }
 
-    fun configure(target: String, config: ReactiveConfig) {
+    /** Pass null outside Auto reply mode, which leaves nothing able to reply. */
+    fun configure(target: String, config: ReactiveConfig?) {
         detector.forgetBaseline()
-        val triggers = config.triggers.distinctBy(TextNormalizer::normalize)
-        val usable = config.enabled && triggers.isNotEmpty() && config.command.isNotBlank()
-        params = if (usable) Params(target, config, triggers) else null
+        val triggers = config?.triggers?.distinctBy(TextNormalizer::normalize).orEmpty()
+        params = config?.takeIf { triggers.isNotEmpty() && it.command.isNotBlank() }
+            ?.let { Params(target, it, triggers) }
     }
 
     fun disable() {
@@ -72,6 +73,11 @@ class ReactiveEngine(
     }
 
     private suspend fun scan(active: Params) {
+        // Anything that arrived during idle hours is old news when the active hours begin.
+        if (!active.config.isActive(LocalDateTime.now())) {
+            pendingPopup = false
+            return detector.forgetBaseline()
+        }
         val matches = findMatches(active)
         val inPopup = matches.filter(::isPopupNode)
         if (popupTrigger.observe(inPopup.isNotEmpty(), SystemClock.elapsedRealtime())) {
@@ -115,7 +121,7 @@ class ReactiveEngine(
         return seen.values.toList()
     }
 
-    /** Messages live in WOLF's chat view and previews in lists, so anything else is a popup. */
+    /** Messages live in the chat view and previews in lists, so anything else is a popup. */
     private fun isPopupNode(node: AccessibilityNodeInfo): Boolean {
         if (NodeTools.isInsideList(node)) return false
         var current = node.parent

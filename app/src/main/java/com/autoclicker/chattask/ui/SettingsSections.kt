@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import com.autoclicker.chattask.R
+import com.autoclicker.chattask.core.CommandEntry
 import com.autoclicker.chattask.core.ConfigError
+import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.data.SettingsStore
@@ -17,6 +19,9 @@ import com.autoclicker.chattask.databinding.SectionTimerBinding
 import com.autoclicker.chattask.service.AutoTaskService
 import com.autoclicker.chattask.service.Notices
 import com.autoclicker.chattask.service.TaskBus
+import com.autoclicker.chattask.service.TaskPhase
+import com.autoclicker.chattask.service.TaskStatus
+import com.autoclicker.chattask.service.homeStateOf
 
 /**
  * One group of settings, used unchanged by its own page and by All Settings. Saved values live only
@@ -37,6 +42,10 @@ interface SettingsSection {
     fun showErrors(errors: List<ConfigError>, message: (ConfigError) -> String) = Unit
 
     fun onResume() = Unit
+
+    /** Called whenever the session changes, for sections that show it. */
+    fun onStatus(status: TaskStatus) = Unit
+
     fun saveState(state: Bundle) = Unit
     fun restoreState(state: Bundle) = Unit
 }
@@ -101,16 +110,51 @@ class CommandsSection(
     }
 }
 
-class AutoReplySection(inflater: LayoutInflater, parent: ViewGroup) : SettingsSection {
+/** Everything Auto reply needs lives here, so it works without the Commands page. */
+class AutoReplySection(
+    inflater: LayoutInflater,
+    parent: ViewGroup,
+    private val store: SettingsStore,
+    private val onStart: () -> Unit,
+) : SettingsSection {
     private val binding = SectionAutoReplyBinding.inflate(inflater, parent, false)
+    private val replyHours = HoursEditor(binding.hours, R.string.summary_reply_pick_times) {}
+    private val modeChoice = ModeChoice(binding.modeChoice, store) { onStatus(TaskBus.status.value) }
     override val view: View get() = binding.root
 
+    init {
+        binding.buttonReplyStart.setOnClickListener {
+            if (store.operatingMode == OperatingMode.AUTO_REPLY) {
+                onStart()
+            } else {
+                Toast.makeText(view.context, R.string.toast_choose_auto_reply, Toast.LENGTH_LONG).show()
+            }
+        }
+        binding.buttonReplyStop.setOnClickListener { AutoTaskService.instance?.stopSession() }
+    }
+
+    override fun onResume() = modeChoice.show()
+
+    override fun onStatus(status: TaskStatus) {
+        val context = view.context
+        val selected = store.operatingMode == OperatingMode.AUTO_REPLY
+        val state = context.getString(titleOf(homeStateOf(status, status.stoppedByError)))
+        binding.textReplyStatus.text = context.getString(
+            R.string.overlay_mode_state,
+            context.getString(store.operatingMode.shortTitle),
+            state,
+        )
+        binding.buttonReplyStart.isEnabled = status.phase == TaskPhase.IDLE
+        binding.buttonReplyStop.isEnabled = selected && status.phase != TaskPhase.IDLE
+    }
+
     override fun show(config: TaskConfig) = with(binding) {
-        switchReactive.isChecked = config.reactive.enabled
         inputTriggers.setText(config.reactive.triggers.joinToString("\n"))
         inputReaction.setText(config.reactive.command)
         checkRestrictReactive.isChecked = config.reactive.restrictToRoom
         inputReactiveRoom.setText(config.reactive.room)
+        switchReplyReturn.isChecked = config.reactive.returnBeforeSend
+        replyHours.show(config.reactive.hours.allDay, config.reactive.hours.startMinute, config.reactive.hours.endMinute)
         inputKeywords.setText(config.popupKeywords.joinToString(", "))
         switchSkipLists.isChecked = config.skipListItems
     }
@@ -118,11 +162,12 @@ class AutoReplySection(inflater: LayoutInflater, parent: ViewGroup) : SettingsSe
     override fun read(base: TaskConfig) = with(binding) {
         base.copy(
             reactive = ReactiveConfig(
-                enabled = switchReactive.isChecked,
                 triggers = TaskConfig.parseKeywords(inputTriggers.textValue()),
                 command = inputReaction.textValue().trim(),
                 restrictToRoom = checkRestrictReactive.isChecked,
                 room = inputReactiveRoom.textValue().trim(),
+                returnBeforeSend = switchReplyReturn.isChecked,
+                hours = readHours(),
             ),
             popupKeywords = TaskConfig.parseKeywords(inputKeywords.textValue()),
             skipListItems = switchSkipLists.isChecked,
@@ -133,6 +178,21 @@ class AutoReplySection(inflater: LayoutInflater, parent: ViewGroup) : SettingsSe
         layoutTriggers.error = errors.messageOf(message, ConfigError.REACTIVE_NO_TRIGGER)
         layoutReaction.error = errors.messageOf(message, ConfigError.REACTIVE_NO_COMMAND)
         layoutReactiveRoom.error = errors.messageOf(message, ConfigError.REACTIVE_ROOM_REQUIRED)
+    }
+
+    private fun readHours() = CommandEntry("", allDay = replyHours.allDay, startMinute = replyHours.start, endMinute = replyHours.end)
+
+    /** The picked times live outside any view, so the framework cannot restore them. */
+    override fun saveState(state: Bundle) = state.putString(STATE_HOURS, SettingsStore.encodeReplyHours(readHours()))
+
+    override fun restoreState(state: Bundle) {
+        state.getString(STATE_HOURS)?.let(SettingsStore::decodeReplyHours)?.let {
+            replyHours.show(it.allDay, it.startMinute, it.endMinute)
+        }
+    }
+
+    private companion object {
+        const val STATE_HOURS = "reply_hours"
     }
 }
 

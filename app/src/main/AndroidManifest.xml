@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
-    <!-- WOLF to reopen it, the launcher to recognise the home screen, and browsers for About. -->
+    <!-- The target app to reopen it, the launcher to recognise the home screen, and browsers for About. -->
     <queries>
         <package android:name="com.palringo.android" />
         <intent>

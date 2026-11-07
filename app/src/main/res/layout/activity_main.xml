@@ -20,6 +20,10 @@
                 android:id="@+id/topBar"
                 layout="@layout/top_bar" />
 
+            <include
+                android:id="@+id/modeChoice"
+                layout="@layout/mode_choice" />
+
                     <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardStatus"
             android:layout_width="match_parent"

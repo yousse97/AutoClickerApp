@@ -27,7 +27,7 @@ class WatchdogReceiver : BroadcastReceiver() {
         val service = AutoTaskService.instance
         service?.tickSchedule()
         val now = LocalDateTime.now()
-        val mustRun = config.commands.any { !it.allDay && it.isActive(now) }
+        val mustRun = config.activeHours.any { !it.allDay && it.isActive(now) }
         val hasSession = store.loadSession() != null
         if (service != null) {
             store.watchdogMisses = 0

@@ -1,13 +1,34 @@
 package com.autoclicker.chattask.core
 
-/** Settings for YOUSE 2, which answers a trigger phrase instead of following a timer. */
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+
+/** One stretch of active hours: [startsInMs] is 0 once it has begun, and [id] stays the same throughout. */
+data class ReplySlot(val id: Long, val startsInMs: Long)
+
+/** Settings for Auto reply, which answers a trigger phrase instead of following a timer. */
 data class ReactiveConfig(
-    val enabled: Boolean = false,
     val triggers: List<String> = DEFAULT_TRIGGERS,
     val command: String = "",
     val restrictToRoom: Boolean = false,
     val room: String = "",
+    /** Bring the user back 5 seconds before the active hours begin. */
+    val returnBeforeSend: Boolean = true,
+    /** Only the hours are used. Replies have no text or interval of their own here. */
+    val hours: CommandEntry = CommandEntry(""),
 ) {
+    fun isActive(now: LocalDateTime): Boolean = hours.isActive(now)
+
+    /** The coming or current active hours, or null while Daily has no valid times. */
+    fun nextSlot(now: LocalDateTime): ReplySlot? {
+        if (hours.allDay) return ReplySlot(0, 0)
+        val window = hours.window
+        if (!window.isComplete) return null
+        val startsIn = if (window.isActive(now)) 0 else Duration.between(now, window.nextStart(now)).toMillis()
+        return ReplySlot(window.nextEnd(now).toEpochSecond(ZoneOffset.UTC), startsIn)
+    }
+
     companion object {
         val DEFAULT_TRIGGERS = listOf(
             "your animal is back to full energy!",

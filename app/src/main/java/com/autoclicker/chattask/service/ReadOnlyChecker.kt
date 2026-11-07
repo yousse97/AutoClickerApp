@@ -29,8 +29,8 @@ object ReadOnlyChecker {
             overlayAllowed = Settings.canDrawOverlays(service),
             wolfInFront = NodeTools.activePackage(service) == WolfUi.PACKAGE,
             screen = navigator.readScreen(),
-            restrictToRoom = config.restrictToRoom,
-            room = config.targetRoom,
+            restrictToRoom = config.activeRestrict,
+            room = config.activeRoom,
             sendButtonVisible = navigator.isSendButtonVisible(),
         )
         val passed = results.none { it.status == CheckStatus.FAIL }

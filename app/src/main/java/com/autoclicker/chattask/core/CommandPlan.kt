@@ -117,10 +117,22 @@ class CommandTimers(
     }
 
     companion object {
+        private const val NEVER_MS = 365L * 24 * 60 * 60 * 1000
+
         fun of(commands: List<CommandEntry>, firstDelayMs: Long) = CommandTimers(
             commands.map { command -> Spec(command.intervalSec * 1000L, command::isActive) },
             firstDelayMs,
         )
+
+        /**
+         * The timers for a session in [config]'s mode. Auto reply gets one timer that only follows
+         * its active hours and never comes due, so no scheduled command can go out.
+         */
+        fun forConfig(config: TaskConfig, firstDelayMs: Long): CommandTimers = when (config.mode) {
+            OperatingMode.SCHEDULED -> of(config.commands, firstDelayMs)
+            OperatingMode.AUTO_REPLY ->
+                CommandTimers(listOf(Spec(NEVER_MS, config.reactive::isActive)), NEVER_MS)
+        }
 
         /**
          * Where each edited command picks up. A command keeps the timer of the same text, or else

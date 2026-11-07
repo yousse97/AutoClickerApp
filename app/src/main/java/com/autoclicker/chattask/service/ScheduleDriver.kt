@@ -29,28 +29,20 @@ class ScheduleDriver(
         overlayDismissed = true
     }
 
-    /**
-     * After a stop that needs a person, the next command start may begin a new session. With a
-     * 24 hour command enabled there is no such start, so it waits for the user.
-     */
     fun blockAfterStop() {
-        val now = LocalDateTime.now()
-        store.blockedUntilMs = when {
-            config.commands.any { it.allDay } -> Long.MAX_VALUE
-            else -> ScheduleKeeper.nextStart(config, now)?.let(ScheduleKeeper::toEpochMs) ?: 0
-        }
+        store.blockedUntilMs = ScheduleKeeper.blockUntil(config, LocalDateTime.now())
     }
 
     /** Called each second while nothing is running. */
     fun tickStopped() {
         val now = LocalDateTime.now()
-        val hasHours = config.commands.any { !it.allDay }
+        val hasHours = config.activeHours.any { !it.allDay }
         if (!hasHours || hasSession()) {
             if (!hasSession()) clearIdle()
             return
         }
         when {
-            !config.commands.any { it.isActive(now) } -> showIdle(now)
+            !config.activeHours.any { it.isActive(now) } -> showIdle(now)
             System.currentTimeMillis() < store.blockedUntilMs -> showIdle(now)
             else -> startForSchedule(now)
         }

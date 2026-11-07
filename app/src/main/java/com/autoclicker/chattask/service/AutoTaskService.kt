@@ -13,6 +13,7 @@ import com.autoclicker.chattask.core.EventType
 import com.autoclicker.chattask.core.Foreground
 import com.autoclicker.chattask.core.GuardAction
 import com.autoclicker.chattask.core.JitterPolicy
+import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.SessionGuard
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.core.TimerOffset
@@ -116,7 +117,8 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         val config = store.loadConfig()
         scheduleDriver.config = config
         bar.vibrate = config.vibrateBeforeSend
-        bar.returnBeforeSend = config.returnBeforeSend
+        bar.returnBeforeSend = config.activeReturn
+        TaskBus.update { it.copy(mode = config.mode) }
         ScheduleKeeper.arm(this, config)
         session?.let { applyToSession(it, config) }
         tickSchedule()
@@ -129,9 +131,10 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         session = updated
         configureEngines(updated)
         val oldCommands = current.config.commands
+        val keepTimers = current.config.mode == OperatingMode.SCHEDULED && config.mode == OperatingMode.SCHEDULED
         runner.replacePlan(jitterOf(config)) { offsets, baseMs ->
-            CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS).apply {
-                restore(CommandTimers.carryOffsets(oldCommands, offsets, config.commands), baseMs)
+            CommandTimers.forConfig(config, FIRST_SEND_DELAY_MS).apply {
+                if (keepTimers) restore(CommandTimers.carryOffsets(oldCommands, offsets, config.commands), baseMs)
             }
         }
     }
@@ -212,11 +215,11 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         TaskBus.update {
             it.copy(popups = 0, reactions = 0, notice = 0, idleUntilMs = 0, stoppedByError = false)
         }
-        val timers = CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS)
+        val timers = CommandTimers.forConfig(config, FIRST_SEND_DELAY_MS)
         timers.refresh(SystemClock.elapsedRealtime(), LocalDateTime.now())
         runner.start(timers, jitterOf(config))
         // Never pulled out of another app: the channel is checked when they are back in WOLF.
-        if (config.restrictToRoom && inWolf) relaunch()
+        if (config.activeRestrict && inWolf) relaunch()
         WatchdogReceiver.schedule(this)
         EventLog.add(this, EventType.SESSION_STARTED)
     }
@@ -233,7 +236,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         // The bar is retried by the watch loop, so a refused start does not stop the session.
         OverlayService.start(this)
         val now = SystemClock.elapsedRealtime()
-        val timers = CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS)
+        val timers = CommandTimers.forConfig(config, FIRST_SEND_DELAY_MS)
         timers.restore(snapshot.timers, now - elapsed)
         activate(Session(config))
         TaskBus.update { it.copy(popups = snapshot.popups, notice = 0) }
@@ -245,6 +248,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     private fun activate(newSession: Session) {
         session = newSession
         guard = SessionGuard()
+        bar.newSession()
         relaunching = false
         applyEventFilter(true)
         configureEngines(newSession)
@@ -256,12 +260,14 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             keywords = newSession.config.popupKeywords,
             skipLists = newSession.config.skipListItems,
         )
-        reactive.configure(WolfUi.PACKAGE, newSession.config.reactive)
+        reactive.configure(WolfUi.PACKAGE, newSession.config.replies)
         TaskBus.update {
             it.copy(
                 target = WolfUi.PACKAGE,
                 keepScreenOn = newSession.config.keepScreenOn,
-                commandNames = newSession.config.commands.map { command -> command.text },
+                mode = newSession.config.mode,
+                commandNames = newSession.config.commands.takeIf { newSession.config.replies == null }
+                    .orEmpty().map { command -> command.text },
             )
         }
     }
@@ -306,10 +312,10 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             val view = runner.view()
             val idle = view.allIdle && !reactive.hasPending
             if (anr.tick(SystemClock.elapsedRealtime())) continue
-            val returnNow = bar.update(view, !idle, foreground)
+            val returnNow = bar.shouldReturn(session?.config?.replies, view, !idle, foreground)
             scheduleDriver.tickSession(idle)
             if (relaunching) continue
-            if (returnNow && (foreground != Foreground.WOLF || session?.config?.restrictToRoom == true)) {
+            if (returnNow && (foreground != Foreground.WOLF || session?.config?.activeRestrict == true)) {
                 Log.i(EventLog.TAG, "return to WOLF, send in ${view.nextInMs}ms from $foreground")
                 relaunch()
             }
@@ -354,7 +360,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         relaunching = true
         scope.launch {
             showNotice(R.string.notice_recovering)
-            val room = targetRoom ?: current.config.targetRoom.takeIf { current.config.restrictToRoom }.orEmpty()
+            val room = targetRoom ?: current.config.activeRoom.takeIf { current.config.activeRestrict }.orEmpty()
             val result = withContext(nodeDispatcher) { navigator.recover(room, ::isWorking) }
             relaunching = false
             if (session == null) return@launch
@@ -369,6 +375,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     private suspend fun performCycle(index: Int): CycleResult {
         val current = session ?: return CycleResult.HELD
+        if (current.config.replies != null) return CycleResult.HELD
         return try {
             sendCommand(current, index)
         } catch (cancelled: CancellationException) {
@@ -450,7 +457,8 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     private fun jitterOf(config: TaskConfig) = JitterPolicy(config.jitterMinSec, config.jitterMaxSec)
 
-    override fun onTick(view: RunnerView) = TaskBus.show(view)
+    override fun onTick(view: RunnerView) =
+        TaskBus.show(if (session?.config?.replies != null) view.withoutTimers() else view)
 
     override fun onCommandSkipped(index: Int) {
         EventLog.add(this, EventType.COMMAND_SKIPPED)

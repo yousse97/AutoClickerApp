@@ -5,12 +5,38 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchReactive"
+    <include
+        android:id="@+id/modeChoice"
+        layout="@layout/mode_choice" />
+
+    <TextView
+        android:id="@+id/textReplyStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/label_reactive_enabled" />
+        android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonReplyStart"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="@string/button_start" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonReplyStop"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/button_stop" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"
@@ -54,6 +80,17 @@
             android:textDirection="anyRtl" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/section_reply_hours"
+        android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+    <include
+        android:id="@+id/hours"
+        layout="@layout/hours_picker" />
+
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/checkRestrictReactive"
         android:layout_width="match_parent"
@@ -77,6 +114,19 @@
             android:inputType="text"
             android:textDirection="anyRtl" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/switchReplyReturn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/label_return_before_send" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/helper_reply_return"
+        android:textAppearance="?attr/textAppearanceBodySmall" />
 
     <TextView
         android:layout_width="wrap_content"

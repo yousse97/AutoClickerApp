@@ -36,6 +36,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.BarState
+import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.TapTracker
 import com.autoclicker.chattask.core.WolfUi
 import com.autoclicker.chattask.core.formatDuration
@@ -44,6 +45,7 @@ import com.autoclicker.chattask.data.LanguageManager
 import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.OverlayControlsBinding
 import com.autoclicker.chattask.ui.MainActivity
+import com.autoclicker.chattask.ui.shortTitle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -116,6 +118,8 @@ class OverlayService : Service() {
         if (!overlayAttached) return
         clampToScreen()
         windowManager.updateViewLayout(binding.root, params)
+        // While stopped no status arrives to redraw it, and a language change has to show anyway.
+        render(TaskBus.status.value)
     }
 
     override fun onDestroy() {
@@ -237,11 +241,14 @@ class OverlayService : Service() {
             when {
                 status.scheduleNeeded -> "--:--"
                 idle -> idleTime(status)
+                status.mode == OperatingMode.AUTO_REPLY -> "--:--"
                 status.phase != TaskPhase.IDLE -> formatDuration(status.nextInMs)
                 else -> "--:--"
             },
         )
-        binding.textState.show(texts.getString(labelOf(state)))
+        binding.textState.show(
+            texts.getString(R.string.overlay_mode_state, texts.getString(status.mode.shortTitle), texts.getString(labelOf(state))),
+        )
         val name = status.nextIndex?.let(status.commandNames::getOrNull)
         val showName = !compact && !name.isNullOrBlank() && status.phase == TaskPhase.RUNNING && !idle
         binding.textCommand.visibility = if (showName) View.VISIBLE else View.GONE

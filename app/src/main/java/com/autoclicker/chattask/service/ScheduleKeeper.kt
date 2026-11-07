@@ -24,8 +24,17 @@ object ScheduleKeeper {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
 
-    /** The earliest coming start among the commands that have hours. */
-    fun nextStart(config: TaskConfig, now: LocalDateTime): LocalDateTime? = config.commands
+    /**
+     * Until when a stop holds off the schedule. The next start may begin a new session, but with
+     * 24 hours active there is no such start, so it waits for the user.
+     */
+    fun blockUntil(config: TaskConfig, now: LocalDateTime): Long = when {
+        config.activeHours.any { it.allDay } -> Long.MAX_VALUE
+        else -> nextStart(config, now)?.let(::toEpochMs) ?: 0
+    }
+
+    /** The earliest coming start among the entries that have hours. */
+    fun nextStart(config: TaskConfig, now: LocalDateTime): LocalDateTime? = config.activeHours
         .filter { !it.allDay && it.window.isComplete }
         .minOfOrNull { it.window.nextStart(now) }
 
@@ -40,7 +49,7 @@ object ScheduleKeeper {
         )
         alarms.cancel(intent)
         val now = LocalDateTime.now()
-        val windows = config.commands.filter { !it.allDay && it.window.isComplete }.map { it.window }
+        val windows = config.activeHours.filter { !it.allDay && it.window.isComplete }.map { it.window }
         val next = windows.flatMap { listOf(it.nextStart(now), it.nextEnd(now)) }.minOrNull() ?: return
         if (canUseExactAlarms(context)) {
             alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, toEpochMs(next), intent)

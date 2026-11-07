@@ -9,6 +9,9 @@ import com.autoclicker.chattask.core.CheckResult
 import com.autoclicker.chattask.core.CheckStatus
 import com.autoclicker.chattask.core.CommandEntry
 import com.autoclicker.chattask.core.CommandState
+import com.autoclicker.chattask.core.EventRing
+import com.autoclicker.chattask.core.OperatingMode
+import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.core.formatDuration
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.databinding.ActivityMainBinding
@@ -22,7 +25,7 @@ import java.util.Date
 
 /** Draws the home status card. Every state has its own words, not only a color. */
 class StatusCardView(private val context: Context, private val binding: ActivityMainBinding) {
-    fun render(status: TaskStatus, commands: List<CommandEntry>) {
+    fun render(status: TaskStatus, config: TaskConfig) {
         val events = EventLog.read(context)
         val state = homeStateOf(status, events.lastStop != null)
         binding.cardStatus.setCardBackgroundColor(context.getColor(colorOf(state)))
@@ -30,7 +33,21 @@ class StatusCardView(private val context: Context, private val binding: Activity
         binding.textStatusTitle.setTextColor(text)
         binding.textStatusReason.setTextColor(text)
         binding.textStatusTitle.setText(titleOf(state))
-        binding.textStatusReason.text = reasonOf(state, status)
+        binding.textStatusReason.text = reasonOf(state, status, config.mode)
+        val mode = context.getString(R.string.status_mode, context.getString(config.mode.title))
+        binding.textStatusFacts.text = when (config.mode) {
+            OperatingMode.SCHEDULED -> listOf(mode) + commandFacts(status, config.commands, events)
+            OperatingMode.AUTO_REPLY -> listOf(mode) + replyFacts(status, config)
+        }.joinToString("\n")
+    }
+
+    private fun replyFacts(status: TaskStatus, config: TaskConfig): List<String> = listOfNotNull(
+        context.getString(R.string.status_replies, status.reactions),
+        context.getString(R.string.status_reply_hours, hoursText(config.reactive.hours)),
+        nextChange(config.activeHours),
+    )
+
+    private fun commandFacts(status: TaskStatus, commands: List<CommandEntry>, events: EventRing): List<String> {
         val none = context.getString(R.string.log_none)
         val lines = arrayListOf(
             context.getString(R.string.log_last_send, events.lastSend?.let { time(it.timeMs, true) } ?: none),
@@ -41,7 +58,7 @@ class StatusCardView(private val context: Context, private val binding: Activity
         commands.forEachIndexed { index, command ->
             lines += commandLine(index, command, status.commands.getOrNull(index))
         }
-        binding.textStatusFacts.text = lines.joinToString("\n")
+        return lines
     }
 
     private fun nextCommand(status: TaskStatus, none: String): String {
@@ -64,14 +81,7 @@ class StatusCardView(private val context: Context, private val binding: Activity
 
     /** Interval, active hours, state and next send for one command. */
     private fun commandLine(index: Int, command: CommandEntry, view: CommandView?): String {
-        val hours = if (command.allDay) {
-            context.getString(R.string.status_all_day)
-        } else if (command.needsSchedule) {
-            context.getString(R.string.schedule_not_set)
-        } else {
-            "${CommandListEditor.timeText(binding.root, command.startMinute)} - " +
-                CommandListEditor.timeText(binding.root, command.endMinute)
-        }
+        val hours = hoursText(command)
         val state = when (view?.state) {
             CommandState.RUNNING -> R.string.status_running
             CommandState.PENDING -> R.string.command_pending
@@ -89,6 +99,13 @@ class StatusCardView(private val context: Context, private val binding: Activity
         )
     }
 
+    private fun hoursText(entry: CommandEntry): String = when {
+        entry.allDay -> context.getString(R.string.status_all_day)
+        entry.needsSchedule -> context.getString(R.string.schedule_not_set)
+        else -> "${HoursEditor.timeText(binding.root, entry.startMinute)} - " +
+            HoursEditor.timeText(binding.root, entry.endMinute)
+    }
+
     private fun time(ms: Long, withDate: Boolean): String {
         val clock = DateFormat.getTimeFormat(context).format(Date(ms))
         return if (withDate) "${DateFormat.getMediumDateFormat(context).format(Date(ms))} $clock" else clock
@@ -103,17 +120,10 @@ class StatusCardView(private val context: Context, private val binding: Activity
         HomeState.STOPPED -> R.color.status_stopped
     }
 
-    private fun titleOf(state: HomeState) = when (state) {
-        HomeState.RUNNING -> R.string.status_running
-        HomeState.ATTENTION -> R.string.status_attention
-        HomeState.PAUSED -> R.string.status_paused
-        HomeState.IDLE -> R.string.status_idle
-        HomeState.ERROR -> R.string.status_error
-        HomeState.STOPPED -> R.string.status_stopped
-    }
-
-    private fun reasonOf(state: HomeState, status: TaskStatus): String = when (state) {
-        HomeState.RUNNING -> context.getString(R.string.status_running_reason)
+    private fun reasonOf(state: HomeState, status: TaskStatus, mode: OperatingMode): String = when (state) {
+        HomeState.RUNNING -> context.getString(
+            if (mode == OperatingMode.AUTO_REPLY) R.string.status_listening_reason else R.string.status_running_reason,
+        )
         HomeState.ATTENTION -> context.getString(
             if (status.barState == BarState.COMMAND_READY) R.string.overlay_command_ready else R.string.status_send_soon,
         )
@@ -128,6 +138,15 @@ class StatusCardView(private val context: Context, private val binding: Activity
         HomeState.ERROR -> if (status.notice != 0) context.getString(status.notice) else context.getString(R.string.status_error_reason)
         HomeState.STOPPED -> context.getString(R.string.status_stopped_reason)
     }
+}
+
+fun titleOf(state: HomeState) = when (state) {
+    HomeState.RUNNING -> R.string.status_running
+    HomeState.ATTENTION -> R.string.status_attention
+    HomeState.PAUSED -> R.string.status_paused
+    HomeState.IDLE -> R.string.status_idle
+    HomeState.ERROR -> R.string.status_error
+    HomeState.STOPPED -> R.string.status_stopped
 }
 
 /** One line of the check report. */

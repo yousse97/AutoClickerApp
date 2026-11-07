@@ -59,19 +59,20 @@ class ReactiveDetectorTest {
     }
 
     @Test
-    fun `reactive settings are validated only while enabled`() {
-        assertTrue(TaskConfig(commands = own, reactive = ReactiveConfig(enabled = false, command = "")).validate().isEmpty())
+    fun `reactive settings are validated only in auto reply mode`() {
+        val autoReply = OperatingMode.AUTO_REPLY
+        assertTrue(TaskConfig(commands = own, reactive = ReactiveConfig(command = "")).validate().isEmpty())
         assertEquals(
             listOf(ConfigError.REACTIVE_NO_COMMAND),
-            TaskConfig(commands = own, reactive = ReactiveConfig(enabled = true)).validate(),
+            TaskConfig(mode = autoReply, commands = own).validate(),
         )
         assertEquals(
             listOf(ConfigError.REACTIVE_NO_TRIGGER),
-            TaskConfig(commands = own, reactive = ReactiveConfig(true, emptyList(), "!go")).validate(),
+            TaskConfig(mode = autoReply, commands = own, reactive = ReactiveConfig(emptyList(), "!go")).validate(),
         )
         assertEquals(
             listOf(ConfigError.REACTIVE_ROOM_REQUIRED),
-            TaskConfig(commands = own, reactive = ReactiveConfig(true, command = "!go", restrictToRoom = true)).validate(),
+            TaskConfig(mode = autoReply, commands = own, reactive = ReactiveConfig(command = "!go", restrictToRoom = true)).validate(),
         )
     }
 

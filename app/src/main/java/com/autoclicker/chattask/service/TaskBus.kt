@@ -2,6 +2,7 @@ package com.autoclicker.chattask.service
 
 import androidx.annotation.StringRes
 import com.autoclicker.chattask.core.BarState
+import com.autoclicker.chattask.core.OperatingMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.update
 enum class TaskPhase { IDLE, RUNNING, PAUSED }
 
 data class TaskStatus(
+    val mode: OperatingMode = OperatingMode.SCHEDULED,
     val phase: TaskPhase = TaskPhase.IDLE,
     val target: String = "",
     val nextInMs: Long = 0,

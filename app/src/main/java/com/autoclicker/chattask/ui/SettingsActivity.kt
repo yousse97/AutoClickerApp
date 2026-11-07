@@ -8,6 +8,9 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.ConfigError
 import com.autoclicker.chattask.core.TaskConfig
@@ -15,7 +18,9 @@ import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.ActivitySettingsBinding
 import com.autoclicker.chattask.databinding.ItemCollapsibleBinding
 import com.autoclicker.chattask.service.AutoTaskService
+import com.autoclicker.chattask.service.TaskBus
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
 
 /**
  * Shows one section, or all of them as collapsible groups. Fields apply when saved or on leaving
@@ -60,6 +65,11 @@ class SettingsActivity : AppCompatActivity() {
             if (trySave() && isDirty().not()) Toast.makeText(this, R.string.toast_saved, Toast.LENGTH_SHORT).show()
         }
         onBackPressedDispatcher.addCallback(this, leaveCallback)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                TaskBus.status.collect { status -> groups.forEach { it.section.onStatus(status) } }
+            }
+        }
         if (intent.getBooleanExtra(EXTRA_SHOW_ERRORS, false)) showErrors(visibleErrors(form()))
     }
 
@@ -93,11 +103,16 @@ class SettingsActivity : AppCompatActivity() {
         val parent = binding.pageContent
         return when (kind) {
             SettingsSectionKind.COMMANDS -> CommandsSection(layoutInflater, parent, store)
-            SettingsSectionKind.AUTO_REPLY -> AutoReplySection(layoutInflater, parent)
+            SettingsSectionKind.AUTO_REPLY -> AutoReplySection(layoutInflater, parent, store, ::startReplies)
             SettingsSectionKind.CHANNEL -> ChannelSection(layoutInflater, parent) { trySave() }
             SettingsSectionKind.TIMER -> TimerSection(layoutInflater, parent, store) { trySave() }
             SettingsSectionKind.HELP -> HelpSection(this, layoutInflater, parent)
         }
+    }
+
+    /** What is on the page counts, so a change made here does not need Save first. */
+    private fun startReplies() {
+        if (trySave()) SessionControl.start(this) {}
     }
 
     private fun addCollapsible(group: Group) {
@@ -120,7 +135,9 @@ class SettingsActivity : AppCompatActivity() {
         item.chevron.rotation = if (group.expanded) 180f else 0f
     }
 
-    private fun form(): TaskConfig = groups.fold(baseline) { config, group -> group.section.read(config) }
+    /** The mode changes outside these fields, and which fields must be valid depends on it. */
+    private fun form(): TaskConfig =
+        groups.fold(baseline.copy(mode = store.operatingMode)) { config, group -> group.section.read(config) }
 
     private fun isDirty() = form() != baseline
 
