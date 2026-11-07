@@ -58,7 +58,7 @@
     <string name="button_add_command">+ Add Command</string>
     <string name="button_remove_command">Remove command</string>
 
-    <string name="label_room">Channel name or number / اسم أو رقم القناة</string>
+    <string name="label_room">Channel name or number</string>
     <string name="helper_room">Saved on this device only. Enter the exact channel name or number as it appears in your own WOLF account. Channels differ between accounts.</string>
 
     <string name="error_too_many_commands">Use at most 5 commands.</string>
@@ -73,7 +73,7 @@
     <string name="label_triggers">Trigger phrases</string>
     <string name="helper_keywords_reactive">One per line, or separated by commas.</string>
     <string name="label_reaction_command">Reaction command</string>
-    <string name="label_restrict_room">Restrict execution strictly to this room / تقييد الإرسال بهذه الغرفة فقط</string>
+    <string name="label_restrict_room">Send only in this channel</string>
     <string name="helper_restrict_room">Commands go out only in this exact channel. Leave this off to send in any WOLF channel you have open. Private chats are never used.</string>
     <string name="error_room_required">Enter your channel, or turn off the restriction.</string>
     <string name="error_no_trigger">Enter at least one trigger phrase.</string>
