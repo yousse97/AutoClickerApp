@@ -72,12 +72,27 @@
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchAllDay"
+    <RadioGroup
+        android:id="@+id/groupHours"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="@string/label_all_day" />
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/radioAllDay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/label_all_day" />
+
+        <RadioButton
+            android:id="@+id/radioDaily"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/label_daily" />
+    </RadioGroup>
 
     <LinearLayout
         android:id="@+id/rowHours"
@@ -100,4 +115,11 @@
             android:layout_height="wrap_content"
             android:layout_weight="1" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/textSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textAppearance="?attr/textAppearanceBodySmall" />
 </LinearLayout>

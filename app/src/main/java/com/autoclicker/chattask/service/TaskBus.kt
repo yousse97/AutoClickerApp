@@ -42,4 +42,18 @@ object TaskBus {
     val status: StateFlow<TaskStatus> = mutableStatus.asStateFlow()
 
     fun update(transform: (TaskStatus) -> TaskStatus) = mutableStatus.update(transform)
+
+    fun show(view: RunnerView) = update {
+        it.copy(
+            phase = view.phase,
+            nextInMs = view.nextInMs,
+            sessionLeftMs = view.sessionLeftMs,
+            sent = view.sent,
+            failed = view.failed,
+            workCycle = view.workCycle,
+            nextIndex = view.nextIndex,
+            nextTotalMs = view.nextTotalMs,
+            commands = view.commands,
+        )
+    }
 }

@@ -31,6 +31,11 @@ class SettingsStore(context: Context) {
         context.applicationContext.getSharedPreferences("session", Context.MODE_PRIVATE)
     private val secure = SecureStore(context)
 
+    /** Old Work and Rest times cannot become clock times, so the user is asked to pick them. */
+    var schedulePromptPending: Boolean
+        get() = prefs.contains(KEY_DURATION) && !prefs.getBoolean(KEY_SCHEDULE_PROMPT_DONE, false)
+        set(value) = prefs.edit().putBoolean(KEY_SCHEDULE_PROMPT_DONE, !value).apply()
+
     var returnBeforeSend: Boolean
         get() = prefs.getBoolean(KEY_RETURN_BEFORE_SEND, true)
         set(value) = prefs.edit().putBoolean(KEY_RETURN_BEFORE_SEND, value).apply()
@@ -75,8 +80,6 @@ class SettingsStore(context: Context) {
             commands = prefs.getString(KEY_COMMANDS, null)
                 ?.let { decodeCommands(it, legacyInterval, legacySchedule) }
                 ?: legacyCommand ?: defaults.commands,
-            workDurationSec = prefs.getInt(KEY_DURATION, defaults.workDurationSec),
-            restDurationSec = prefs.getInt(KEY_REST, defaults.restDurationSec),
             jitterMinSec = prefs.getInt(KEY_JITTER_MIN, defaults.jitterMinSec),
             jitterMaxSec = prefs.getInt(KEY_JITTER_MAX, defaults.jitterMaxSec),
             popupKeywords = prefs.getString(KEY_KEYWORDS, null)?.let(TaskConfig::parseKeywords)
@@ -107,8 +110,6 @@ class SettingsStore(context: Context) {
         secure.restrictReactiveRoom = config.reactive.restrictToRoom
         prefs.edit()
             .putString(KEY_COMMANDS, encodeCommands(config.commands))
-            .putInt(KEY_DURATION, config.workDurationSec)
-            .putInt(KEY_REST, config.restDurationSec)
             .putInt(KEY_JITTER_MIN, config.jitterMinSec)
             .putInt(KEY_JITTER_MAX, config.jitterMaxSec)
             .putString(KEY_KEYWORDS, config.popupKeywords.joinToString("\n"))
@@ -256,6 +257,7 @@ class SettingsStore(context: Context) {
         private const val KEY_SCHEDULE_END = "schedule_end"
         private const val KEY_IDLE_SCREEN = "idle_screen"
         private const val KEY_VIBRATE = "vibrate"
+        private const val KEY_SCHEDULE_PROMPT_DONE = "schedule_prompt_done"
         private const val KEY_RETURN_BEFORE_SEND = "return_before_send"
         private const val KEY_REACTIVE_ENABLED = "reactive_enabled"
         private const val KEY_REACTIVE_TRIGGERS = "reactive_triggers"

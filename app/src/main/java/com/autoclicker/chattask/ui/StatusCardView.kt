@@ -14,8 +14,10 @@ import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.databinding.ActivityMainBinding
 import com.autoclicker.chattask.service.CommandView
 import com.autoclicker.chattask.service.HomeState
+import com.autoclicker.chattask.service.ScheduleKeeper
 import com.autoclicker.chattask.service.TaskStatus
 import com.autoclicker.chattask.service.homeStateOf
+import java.time.LocalDateTime
 import java.util.Date
 
 /** Draws the home status card. Every state has its own words, not only a color. */
@@ -24,6 +26,9 @@ class StatusCardView(private val context: Context, private val binding: Activity
         val events = EventLog.read(context)
         val state = homeStateOf(status, events.lastStop != null)
         binding.cardStatus.setCardBackgroundColor(context.getColor(colorOf(state)))
+        val text = context.getColor(if (state == HomeState.PAUSED) R.color.status_on_paused else R.color.bar_text)
+        binding.textStatusTitle.setTextColor(text)
+        binding.textStatusReason.setTextColor(text)
         binding.textStatusTitle.setText(titleOf(state))
         binding.textStatusReason.text = reasonOf(state, status)
         val none = context.getString(R.string.log_none)
@@ -32,6 +37,7 @@ class StatusCardView(private val context: Context, private val binding: Activity
             context.getString(R.string.status_next_command, nextCommand(status, none)),
             context.getString(R.string.log_failures, events.consecutiveFailures),
         )
+        nextChange(commands)?.let(lines::add)
         commands.forEachIndexed { index, command ->
             lines += commandLine(index, command, status.commands.getOrNull(index))
         }
@@ -42,6 +48,18 @@ class StatusCardView(private val context: Context, private val binding: Activity
         if (status.nextInMs <= 0) return none
         val name = status.nextIndex?.let(status.commandNames::getOrNull)
         return listOfNotNull(name, formatDuration(status.nextInMs)).joinToString(" · ")
+    }
+
+    /** The next daily start or stop, taken from the real clock. */
+    private fun nextChange(commands: List<CommandEntry>): String? {
+        val now = LocalDateTime.now()
+        val windows = commands.filter { !it.allDay && it.window.isComplete }.map { it.window }
+        val start = windows.minOfOrNull { it.nextStart(now) }
+        val end = windows.minOfOrNull { it.nextEnd(now) }
+        if (start == null || end == null) return null
+        val stopsFirst = end < start
+        val text = if (stopsFirst) R.string.status_schedule_stop else R.string.status_schedule_start
+        return context.getString(text, time(ScheduleKeeper.toEpochMs(minOf(start, end)), false))
     }
 
     /** Interval, active hours, state and next send for one command. */

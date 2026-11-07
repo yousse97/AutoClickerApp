@@ -10,8 +10,6 @@ class TaskConfigTest {
     @Test
     fun `defaults match the requested schedule and are valid`() {
         val config = TaskConfig()
-        assertEquals(79_200, config.workDurationSec)
-        assertEquals(7_260, config.restDurationSec)
         assertTrue("x" in config.popupKeywords && "X" in config.popupKeywords)
         assertEquals(listOf(ConfigError.EMPTY_COMMAND, ConfigError.INTERVAL_TOO_SHORT), config.validate())
         assertTrue(config.commands.all { it.text.isEmpty() })
@@ -31,14 +29,13 @@ class TaskConfigTest {
             TaskConfig(commands = List(6) { CommandEntry("c$it", 610) }).validate(),
         )
         assertEquals(listOf(ConfigError.ROOM_TOO_LONG), TaskConfig(commands = own, targetRoom = "9".repeat(65)).validate())
-        assertEquals(listOf(ConfigError.DURATION_TOO_SHORT), TaskConfig(commands = own, workDurationSec = 60).validate())
         assertEquals(
             listOf(ConfigError.JITTER_RANGE),
             TaskConfig(commands = own, jitterMinSec = 5, jitterMaxSec = 3).validate(),
         )
         assertEquals(
             listOf(ConfigError.JITTER_TOO_LARGE),
-            TaskConfig(commands = listOf(CommandEntry("a", 20)), workDurationSec = 60, jitterMaxSec = 16).validate(),
+            TaskConfig(commands = listOf(CommandEntry("a", 20)), jitterMaxSec = 16).validate(),
         )
     }
 

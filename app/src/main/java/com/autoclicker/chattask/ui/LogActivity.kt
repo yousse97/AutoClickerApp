@@ -60,6 +60,11 @@ class LogActivity : AppCompatActivity() {
         EventType.STOPPED_FAILURES -> R.string.event_stopped_failures
         EventType.REACTION_SENT -> R.string.event_reaction_sent
         EventType.REACTION_FAILED -> R.string.event_reaction_failed
+        EventType.ANR_SEEN -> R.string.event_anr_seen
+        EventType.ANR_CLOSED -> R.string.event_anr_closed
+        EventType.ANR_CLOSE_FAILED -> R.string.event_anr_close_failed
+        EventType.ANR_GAVE_UP -> R.string.event_anr_gave_up
+        EventType.STOPPED_ANR -> R.string.event_stopped_anr
         EventType.POPUP_TRIGGER -> R.string.event_popup_trigger
         EventType.POPUP_SENDER_UNVERIFIED -> R.string.event_popup_unverified
         EventType.SCHEDULE_START -> R.string.event_schedule_start

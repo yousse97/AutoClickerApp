@@ -14,6 +14,14 @@ class WorkRestScheduler(
 ) {
     val loops: Boolean get() = restMs > 0
 
+    companion object {
+        private const val ENDLESS_MS = 3650L * 24 * 3_600_000
+
+        /** Sessions have no length of their own: each command's hours follow the real clock. */
+        fun endless(intervalMs: Long, firstDelayMs: Long) =
+            WorkRestScheduler(ENDLESS_MS, 0, intervalMs, firstDelayMs)
+    }
+
     fun workPlan(now: Long): SessionSchedule =
         SessionSchedule.create(now, firstDelayMs, intervalMs, workMs)
 

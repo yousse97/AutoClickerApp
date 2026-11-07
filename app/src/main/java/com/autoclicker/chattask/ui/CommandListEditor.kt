@@ -38,7 +38,7 @@ class CommandListEditor(private val list: LinearLayout, private val addButton: V
         CommandEntry(
             text = row.binding.inputText.text?.toString().orEmpty().trim(),
             intervalSec = (minutes * 60L + seconds).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-            allDay = row.binding.switchAllDay.isChecked,
+            allDay = row.binding.radioAllDay.isChecked,
             startMinute = row.start,
             endMinute = row.end,
         )
@@ -59,8 +59,8 @@ class CommandListEditor(private val list: LinearLayout, private val addButton: V
             binding.inputMinutes.setText((command.intervalSec / 60).toString())
             binding.inputSeconds.setText((command.intervalSec % 60).toString())
         }
-        binding.switchAllDay.isChecked = command.allDay
-        binding.switchAllDay.setOnCheckedChangeListener { _, _ -> refresh() }
+        binding.groupHours.check(if (command.allDay) R.id.radioAllDay else R.id.radioDaily)
+        binding.groupHours.setOnCheckedChangeListener { _, _ -> refresh() }
         binding.buttonStart.setOnClickListener { pickTime(row.start) { row.start = it } }
         binding.buttonEnd.setOnClickListener { pickTime(row.end) { row.end = it } }
         binding.buttonRemove.setOnClickListener {
@@ -95,11 +95,22 @@ class CommandListEditor(private val list: LinearLayout, private val addButton: V
             val binding = row.binding
             binding.layoutText.hint = context.getString(R.string.label_command_numbered, index + 1)
             binding.buttonRemove.visibility = if (rows.size > 1) View.VISIBLE else View.GONE
-            binding.rowHours.visibility = if (binding.switchAllDay.isChecked) View.GONE else View.VISIBLE
+            val allDay = binding.radioAllDay.isChecked
+            binding.rowHours.visibility = if (allDay) View.GONE else View.VISIBLE
+            binding.textSummary.text = summaryOf(allDay, row)
             binding.buttonStart.text = context.getString(R.string.schedule_start, timeLabel(row.start))
             binding.buttonEnd.text = context.getString(R.string.schedule_end, timeLabel(row.end))
         }
         addButton.visibility = if (rows.size < TaskConfig.MAX_COMMANDS) View.VISIBLE else View.GONE
+    }
+
+    private fun summaryOf(allDay: Boolean, row: Row): String {
+        val context = list.context
+        return when {
+            allDay -> context.getString(R.string.summary_all_day)
+            !DailySchedule(row.start, row.end).isComplete -> context.getString(R.string.summary_pick_times)
+            else -> context.getString(R.string.summary_daily, timeLabel(row.start), timeLabel(row.end))
+        }
     }
 
     /** Twelve-hour phones show AM or PM here, so the picked period is always clear. */

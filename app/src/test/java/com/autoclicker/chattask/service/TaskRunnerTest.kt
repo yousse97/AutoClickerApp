@@ -5,6 +5,7 @@ import com.autoclicker.chattask.core.CommandState
 import com.autoclicker.chattask.core.CommandTimers
 import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.SessionSchedule
+import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.WorkRestScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,6 +16,7 @@ import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -325,6 +327,80 @@ class TaskRunnerTest {
         runCurrent()
         assertEquals(2, sentAt.size)
         assertEquals(interval, sentAt[1] - sentAt[0])
+    }
+
+    private fun TestScope.restoreDaily(runner: TaskRunner, offsets: List<TimerOffset?>) {
+        val timers = CommandTimers.of(listOf(daily), 3_000)
+        timers.restore(offsets, currentTime)
+        val session = WorkRestScheduler.endless(interval, 3_000)
+        runner.start(session.workPlan(currentTime), noJitter, session, commandTimers = timers)
+    }
+
+    private val daily = CommandEntry("a", 60, allDay = false, startMinute = 0, endMinute = 13 * 60)
+
+    @Test
+    fun `a session that recovers inside the hours resumes at once`() = runTest {
+        var sends = 0
+        val runner = indexRunner(backgroundScope) { sends++; CycleResult.SENT }
+        restoreDaily(runner, listOf(TimerOffset(-500_000, -500_000, false)))
+
+        advanceTimeBy(1_000)
+        runCurrent()
+
+        assertEquals(1, sends)
+    }
+
+    @Test
+    fun `a session that recovers outside the hours stays idle until the real start`() = runTest {
+        var sends = 0
+        val runner = indexRunner(backgroundScope) { sends++; CycleResult.SENT }
+        wall = wall.withHour(15)
+        restoreDaily(runner, listOf(TimerOffset(-500_000, -500_000, false)))
+
+        advanceTimeBy(600_000)
+        runCurrent()
+        assertTrue(runner.view().allIdle)
+        assertEquals(0, sends)
+
+        wall = wall.plusDays(1).withHour(0)
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(1, sends)
+    }
+
+    @Test
+    fun `the end of the hours comes from the clock, not from when a session started`() = runTest {
+        val runner = indexRunner(backgroundScope) { CycleResult.SENT }
+        wall = wall.withHour(12).withMinute(59)
+        val timers = CommandTimers.of(listOf(daily), 3_000)
+        timers.refresh(currentTime, wall)
+        val session = WorkRestScheduler.endless(interval, 3_000)
+        runner.start(session.workPlan(currentTime), noJitter, session, commandTimers = timers)
+        advanceTimeBy(30_000)
+        runCurrent()
+        assertFalse(runner.view().allIdle)
+
+        wall = wall.withHour(13).withMinute(0)
+        advanceTimeBy(2_000)
+        runCurrent()
+
+        assertTrue(runner.view().allIdle)
+        assertEquals(null, recorder.finished)
+    }
+
+    @Test
+    fun `a session never ends by itself`() = runTest {
+        val runner = indexRunner(backgroundScope) { CycleResult.SENT }
+        val session = WorkRestScheduler.endless(interval, 3_000)
+        val timers = CommandTimers.of(listOf(CommandEntry("a", 3_600)), 3_000)
+        timers.refresh(currentTime, wall)
+        runner.start(session.workPlan(currentTime), noJitter, session, commandTimers = timers)
+
+        advanceTimeBy(30 * 3_600_000L)
+        runCurrent()
+
+        assertEquals(null, recorder.finished)
+        assertEquals(TaskPhase.RUNNING, runner.phase)
     }
 
     @Test

@@ -4,9 +4,6 @@ package com.autoclicker.chattask.core
 data class TaskConfig(
     /** Starts as one empty row: each user enters their own commands. */
     val commands: List<CommandEntry> = listOf(CommandEntry("")),
-    val workDurationSec: Int = 22 * 60 * 60,
-    /** Zero means stop after one work period instead of looping. */
-    val restDurationSec: Int = 2 * 60 * 60 + 60,
     val jitterMinSec: Int = 2,
     val jitterMaxSec: Int = 4,
     val popupKeywords: List<String> = DEFAULT_POPUP_KEYWORDS,
@@ -31,8 +28,6 @@ data class TaskConfig(
         val intervals = commands.map { it.intervalSec }
         if (intervals.any { it < MIN_INTERVAL_SEC }) add(ConfigError.INTERVAL_TOO_SHORT)
         val shortest = intervals.minOrNull() ?: MIN_INTERVAL_SEC
-        val usesWorkRest = commands.all { it.allDay }
-        if (usesWorkRest && workDurationSec < shortest) add(ConfigError.DURATION_TOO_SHORT)
         if (jitterMinSec < 0 || jitterMaxSec < jitterMinSec) add(ConfigError.JITTER_RANGE)
         val intervalsSet = shortest >= MIN_INTERVAL_SEC
         if (intervalsSet && jitterMaxSec + MIN_JITTER_MARGIN_SEC > shortest) add(ConfigError.JITTER_TOO_LARGE)
@@ -70,7 +65,6 @@ enum class ConfigError {
     COMMAND_TOO_LONG,
     TOO_MANY_COMMANDS,
     INTERVAL_TOO_SHORT,
-    DURATION_TOO_SHORT,
     JITTER_RANGE,
     JITTER_TOO_LARGE,
     ROOM_TOO_LONG,

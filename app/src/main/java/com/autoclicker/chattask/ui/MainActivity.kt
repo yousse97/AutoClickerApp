@@ -89,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.buttonCheck.setOnClickListener { runCheck(openWolf = false) }
         showOverlaySize()
+        binding.textSchedulePrompt.visibility = if (store.schedulePromptPending) View.VISIBLE else View.GONE
         binding.switchReturn.setOnCheckedChangeListener { _, checked ->
             store.returnBeforeSend = checked
             AutoTaskService.instance?.reloadSettings()
@@ -223,10 +224,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showConfig(config: TaskConfig) = with(binding) {
-        inputDurationHours.setText((config.workDurationSec / 3600).toString())
-        inputDurationMinutes.setText((config.workDurationSec % 3600 / 60).toString())
-        inputRestHours.setText((config.restDurationSec / 3600).toString())
-        inputRestMinutes.setText((config.restDurationSec % 3600 / 60).toString())
         inputJitterMin.setText(config.jitterMinSec.toString())
         inputJitterMax.setText(config.jitterMaxSec.toString())
         inputKeywords.setText(config.popupKeywords.joinToString(", "))
@@ -247,12 +244,6 @@ class MainActivity : AppCompatActivity() {
     private fun readConfig() = with(binding) {
         TaskConfig(
             commands = commandEditor.read(),
-            workDurationSec = seconds(
-                inputDurationHours.intValue() * 3600L + inputDurationMinutes.intValue() * 60L,
-            ),
-            restDurationSec = seconds(
-                inputRestHours.intValue() * 3600L + inputRestMinutes.intValue() * 60L,
-            ),
             jitterMinSec = inputJitterMin.intValue(),
             jitterMaxSec = inputJitterMax.intValue(),
             popupKeywords = TaskConfig.parseKeywords(inputKeywords.text?.toString().orEmpty()),
@@ -275,8 +266,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun android.widget.EditText.intValue(): Int = text?.toString()?.toIntOrNull() ?: 0
 
-    private fun seconds(value: Long): Int = value.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-
     private fun showErrors(errors: List<ConfigError>) = with(binding) {
         fun message(vararg matching: ConfigError): String? =
             errors.firstOrNull { it in matching }?.let { getString(messageFor(it)) }
@@ -291,7 +280,6 @@ class MainActivity : AppCompatActivity() {
         )
         textCommandsError.text = listError
         textCommandsError.visibility = if (listError == null) View.GONE else View.VISIBLE
-        layoutDurationHours.error = message(ConfigError.DURATION_TOO_SHORT)
         layoutJitterMin.error = message(ConfigError.JITTER_RANGE)
         layoutRoom.error = message(ConfigError.ROOM_TOO_LONG, ConfigError.ROOM_REQUIRED)
         layoutTriggers.error = message(ConfigError.REACTIVE_NO_TRIGGER)
@@ -306,7 +294,6 @@ class MainActivity : AppCompatActivity() {
         ConfigError.COMMAND_TOO_LONG -> R.string.error_command_too_long
         ConfigError.TOO_MANY_COMMANDS -> R.string.error_too_many_commands
         ConfigError.INTERVAL_TOO_SHORT -> R.string.error_interval_too_short
-        ConfigError.DURATION_TOO_SHORT -> R.string.error_duration_too_short
         ConfigError.JITTER_RANGE -> R.string.error_jitter_range
         ConfigError.JITTER_TOO_LARGE -> R.string.error_jitter_too_large
         ConfigError.ROOM_TOO_LONG -> R.string.error_room_too_long
@@ -322,6 +309,8 @@ class MainActivity : AppCompatActivity() {
         showErrors(errors)
         if (errors.isNotEmpty()) return
         store.saveConfig(config)
+        store.schedulePromptPending = false
+        binding.textSchedulePrompt.visibility = View.GONE
         AutoTaskService.instance?.reloadSettings()
 
         if (!isAccessibilityEnabled() || !Settings.canDrawOverlays(this)) {

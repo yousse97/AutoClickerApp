@@ -18,8 +18,6 @@
 
     <string name="label_interval_minutes">الفاصل (دقيقة)</string>
     <string name="label_interval_seconds">الفاصل (ثانية)</string>
-    <string name="label_duration_hours">العمل (ساعات)</string>
-    <string name="label_duration_minutes">العمل (دقائق)</string>
     <string name="label_jitter_min">أقل تفاوت (ثانية)</string>
     <string name="label_jitter_max">أقصى تفاوت (ثانية)</string>
     <string name="label_keywords">إغلاق الأزرار المسماة</string>
@@ -32,7 +30,6 @@
     <string name="error_empty_command">أدخل أمرك.</string>
     <string name="error_command_too_long">الأمر طويل جدًا.</string>
     <string name="error_interval_too_short">حدد لكل أمر فاصلًا لا يقل عن 10 ثوانٍ.</string>
-    <string name="error_duration_too_short">يجب ألا يقل عن فاصل واحد.</string>
     <string name="error_jitter_range">يجب ألا يتجاوز الحد الأدنى الحد الأقصى.</string>
     <string name="error_jitter_too_large">يجب أن يقل أقصى تفاوت عن كل فاصل بما لا يقل عن 5 ثوانٍ.</string>
 
@@ -68,9 +65,6 @@
     <string name="button_add_command">+ إضافة أمر</string>
     <string name="button_remove_command">حذف الأمر</string>
 
-    <string name="label_rest_hours">الراحة (ساعات)</string>
-    <string name="label_rest_minutes">الراحة (دقائق)</string>
-    <string name="helper_rest">ينطبق العمل والراحة فقط عندما تعمل كل الأوامر 24 ساعة. اجعل الراحة 0 للتوقف بعد فترة عمل واحدة.</string>
     <string name="label_room">اسم أو رقم القناة</string>
     <string name="helper_room">يُحفظ على هذا الجهاز فقط. أدخل اسم القناة أو رقمها تمامًا كما يظهر في حسابك في WOLF. تختلف القنوات من حساب إلى آخر.</string>
 
@@ -107,7 +101,7 @@
     <string name="button_guide">دليل الإعداد</string>
     <string name="button_log">سجل الأحداث</string>
     <string name="disclosure_title">قبل التفعيل</string>
-    <string name="disclosure_message">تقرأ الخدمة شاشة WOLF وتنفذ الأوامر داخله فقط.\n\nولتعرف متى تنتظر، تتحقق من اسم التطبيق الظاهر. ولا تقرأ أو تضغط أو تكتب في أي تطبيق آخر.\n\nلا يحفظ التطبيق نصوص المحادثات.\n\nلا يرسل التطبيق أي بيانات إلى الإنترنت.</string>
+    <string name="disclosure_message">تقرأ الخدمة شاشة WOLF وتنفذ الأوامر داخله فقط.\n\nولتعرف متى تنتظر، تتحقق من اسم التطبيق الظاهر. ولا تقرأ أو تضغط أو تكتب في أي تطبيق آخر.\n\nإذا أظهر أندرويد نافذته الخاصة بأن WOLF لا يستجيب، تقرأ الخدمة تلك النافذة ويمكنها إغلاقها، ثم تعيد فتح WOLF.\n\nلا يحفظ التطبيق نصوص المحادثات.\n\nلا يرسل التطبيق أي بيانات إلى الإنترنت.</string>
     <string name="disclosure_continue">متابعة إلى الإعدادات</string>
     <string name="notice_not_channel">في الانتظار: لم يتم تأكيد قناة WOLF</string>
     <string name="notification_alerts_channel">تنبيهات الجلسة</string>
@@ -168,8 +162,8 @@
     <string name="event_room_ambiguous">لم يُرسل: عدة قنوات بالاسم نفسه</string>
     <string name="event_tab_not_found">لم يُرسل: لم يتم العثور على تبويب القنوات</string>
 
-    <string name="schedule_start">البداية: %1$s</string>
-    <string name="schedule_end">النهاية: %1$s</string>
+    <string name="schedule_start">من: %1$s</string>
+    <string name="schedule_end">إلى: %1$s</string>
     <string name="schedule_not_set">غير محدد</string>
     <string name="label_idle_screen">إبقاء الشاشة مضاءة خلال ساعات التوقف</string>
     <string name="label_vibrate">الاهتزاز قبل الإرسال بـ30 ثانية عند الخروج من WOLF</string>
@@ -238,4 +232,16 @@
 
     <string name="label_return_before_send">العودة إلى WOLF قبل الإرسال بـ5 ثوانٍ</string>
     <string name="helper_return_before_send">يفتح WOLF من أي تطبيق وينتقل إلى قناتك. عند تعطيله، ينتظر الأمر حتى تعود إلى WOLF.</string>
+
+    <string name="label_daily">جدول يومي</string>
+    <string name="summary_all_day">يعمل طوال اليوم، كل يوم.</string>
+    <string name="summary_daily">يعمل كل يوم من %1$s إلى %2$s. في الانتظار من %2$s إلى %1$s.</string>
+    <string name="summary_pick_times">اختر وقت البداية ووقت النهاية.</string>
+    <string name="schedule_prompt">تم استبدال العمل والراحة بجداول حسب الساعة. حدد جدولًا يوميًا لكل أمر، أو أبقِ 24 ساعة متواصلة، ثم احفظ.</string>
+    <string name="alert_stopped_anr">توقف WOLF عن الاستجابة 3 مرات متتالية. لم يُرسل شيء آخر.</string>
+    <string name="event_anr_seen">WOLF لا يستجيب: في الانتظار</string>
+    <string name="event_anr_closed">WOLF لا يستجيب: تم الإغلاق وإعادة الفتح</string>
+    <string name="event_anr_close_failed">WOLF لا يستجيب: تعذر الإغلاق</string>
+    <string name="event_anr_gave_up">WOLF لا يستجيب: تكرر كثيرًا</string>
+    <string name="event_stopped_anr">توقف: لم يستجب WOLF 3 مرات</string>
 </resources>

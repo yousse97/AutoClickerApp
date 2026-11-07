@@ -14,9 +14,9 @@ import com.autoclicker.chattask.core.Foreground
 import com.autoclicker.chattask.core.GuardAction
 import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.SessionGuard
-import com.autoclicker.chattask.core.SessionSchedule
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.core.TimerOffset
+import com.autoclicker.chattask.core.WorkRestScheduler
 import com.autoclicker.chattask.core.WolfUi
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.data.SessionSnapshot
@@ -56,6 +56,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     private lateinit var store: SettingsStore
     private lateinit var scheduleDriver: ScheduleDriver
     private lateinit var cycle: CommandCycle
+    private lateinit var anr: AnrHandler
     private val bar by lazy { BarWatcher(this) }
     private lateinit var popups: PopupEngine
     private lateinit var sender: CommandSender
@@ -87,6 +88,9 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             listener = this,
         )
         cycle = CommandCycle(this, sender, navigator, popups, ::isWorking) { relaunching }
+        anr = AnrHandler(this, { relaunch() }) {
+            stopWithReason(EventType.STOPPED_ANR, R.string.alert_stopped_anr)
+        }
         scheduleDriver = ScheduleDriver(
             service = this,
             store = store,
@@ -183,7 +187,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         val inWolf = NodeTools.activePackage(this) == WolfUi.PACKAGE
         if (!inWolf && !scheduled) return showNotice(R.string.notice_open_chat)
 
-        val cycles = ScheduleKeeper.cyclesOf(config, FIRST_SEND_DELAY_MS)
+        val cycles = cyclesOf(config)
         activate(Session(config))
         TaskBus.update { it.copy(popups = 0, reactions = 0, notice = 0, idleUntilMs = 0, stoppedByError = false) }
         val timers = CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS)
@@ -205,8 +209,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             max(0, System.currentTimeMillis() - snapshot.savedAtWallMs)
         }
         val config = store.loadConfig()
-        val cycles = ScheduleKeeper.cyclesOf(config, FIRST_SEND_DELAY_MS)
-        if (snapshot.offsets.endInMs - elapsed <= 0 && !cycles.loops) return store.clearSession()
+        val cycles = cyclesOf(config)
 
         // The bar is retried by the watch loop, so a refused start does not stop the session.
         OverlayService.start(this)
@@ -220,19 +223,23 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         activate(Session(config))
         TaskBus.update { it.copy(popups = snapshot.popups, notice = 0) }
         runner.start(
-            plan = SessionSchedule.fromOffsets(snapshot.offsets, now - elapsed),
+            // A fresh plan, because the session itself never ends. The hours come from the clock.
+            plan = cycles.workPlan(now),
             jitterPolicy = jitterOf(config),
             workRest = cycles,
             sentSoFar = snapshot.sent,
             failedSoFar = snapshot.failed,
             paused = snapshot.paused,
-            isResting = snapshot.resting,
-            workCycleSoFar = snapshot.workCycle,
             commandTimers = timers,
         )
         WatchdogReceiver.schedule(this)
         EventLog.add(this, EventType.SESSION_RESTORED)
     }
+
+    private fun cyclesOf(config: TaskConfig) = WorkRestScheduler.endless(
+        (config.commands.minOfOrNull { it.intervalSec } ?: 0) * 1000L,
+        FIRST_SEND_DELAY_MS,
+    )
 
     private fun activate(newSession: Session) {
         session = newSession
@@ -294,6 +301,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             val foreground = NodeTools.foreground(this)
             val view = runner.view()
             val idle = view.allIdle && !reactive.hasPending
+            if (anr.tick(SystemClock.elapsedRealtime())) continue
             val returnNow = bar.update(view, phase == TaskPhase.RUNNING && !idle, foreground)
             scheduleDriver.tickSession(idle)
             if (relaunching) continue
@@ -381,6 +389,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             outcome.sent -> {
                 Log.i(EventLog.TAG, "sent command=${index + 1}")
                 cycle.clearHold()
+                anr.onRecovered()
                 showNotice(0)
                 handle(guard.onSendResult(true))
                 CycleResult.SENT
@@ -437,21 +446,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     private fun jitterOf(config: TaskConfig) = JitterPolicy(config.jitterMinSec, config.jitterMaxSec)
 
-    override fun onTick(view: RunnerView) {
-        TaskBus.update {
-            it.copy(
-                phase = view.phase,
-                nextInMs = view.nextInMs,
-                sessionLeftMs = view.sessionLeftMs,
-                sent = view.sent,
-                failed = view.failed,
-                workCycle = view.workCycle,
-                nextIndex = view.nextIndex,
-                nextTotalMs = view.nextTotalMs,
-                commands = view.commands,
-            )
-        }
-    }
+    override fun onTick(view: RunnerView) = TaskBus.show(view)
 
     override fun onCommandSkipped(index: Int) {
         EventLog.add(this, EventType.COMMAND_SKIPPED)

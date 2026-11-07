@@ -177,6 +177,16 @@
                 android:text="@string/helper_command"
                 android:textAppearance="?attr/textAppearanceBodySmall" />
 
+            <TextView
+                android:id="@+id/textSchedulePrompt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/schedule_prompt"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorPrimary"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:id="@+id/commandList"
                 android:layout_width="match_parent"
@@ -199,86 +209,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/button_add_command" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/layoutDurationHours"
-                    style="@style/Widget.AutoClicker.Field"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:hint="@string/label_duration_hours">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/inputDurationHours"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.AutoClicker.Field"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="@string/label_duration_minutes">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/inputDurationMinutes"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.AutoClicker.Field"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:hint="@string/label_rest_hours">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/inputRestHours"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.AutoClicker.Field"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="@string/label_rest_minutes">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/inputRestMinutes"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/helper_rest"
-                android:textAppearance="?attr/textAppearanceBodySmall" />
 
             <LinearLayout
                 android:layout_width="match_parent"
