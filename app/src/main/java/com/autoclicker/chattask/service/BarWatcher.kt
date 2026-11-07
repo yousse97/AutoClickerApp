@@ -16,7 +16,7 @@ class BarWatcher(private val context: Context) {
 
     /** Returns true when it is time to bring the user back to WOLF for the next send. */
     fun update(view: RunnerView, working: Boolean, foreground: Foreground): Boolean {
-        val slot = (view.sent + view.failed).toLong() shl 8 or view.workCycle.toLong()
+        val slot = (view.sent + view.failed).toLong() shl 8 or (view.nextIndex ?: 0).toLong()
         if (alert.shouldVibrate(slot, view.nextInMs, working, foreground, vibrate)) {
             context.getSystemService(Vibrator::class.java)
                 ?.vibrate(VibrationEffect.createOneShot(VIBRATE_MS, VibrationEffect.DEFAULT_AMPLITUDE))

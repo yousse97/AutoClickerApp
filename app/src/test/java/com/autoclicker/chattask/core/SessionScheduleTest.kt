@@ -10,7 +10,7 @@ import kotlin.random.Random
 class SessionScheduleTest {
     private val interval = 610_000L
 
-    private fun plan() = SessionSchedule.create(0, 3_000, interval, 22 * 3_600_000L)
+    private fun plan() = SessionSchedule.create(0, 3_000, interval)
 
     @Test
     fun `jitter stays within the configured band on both sides`() {
@@ -52,24 +52,9 @@ class SessionScheduleTest {
     }
 
     @Test
-    fun `shifting preserves the time remaining`() {
+    fun `shifting keeps the time until the next send`() {
         val schedule = plan()
         val shifted = schedule.shiftedBy(60_000)
-        assertEquals(schedule.endMs - 0, shifted.endMs - 60_000)
         assertEquals(schedule.nextFireMs - 0, shifted.nextFireMs - 60_000)
-    }
-
-    @Test
-    fun `offsets round trip onto a different clock base`() {
-        val schedule = plan()
-        val restored = SessionSchedule.fromOffsets(schedule.offsetsFrom(500), 9_000_500)
-        assertEquals(schedule.shiftedBy(9_000_000), restored)
-    }
-
-    @Test
-    fun `finished only at the end of the session`() {
-        val schedule = plan()
-        assertFalse(schedule.isFinished(schedule.endMs - 1))
-        assertTrue(schedule.isFinished(schedule.endMs))
     }
 }

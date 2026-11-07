@@ -14,7 +14,6 @@ class HomeStatusTest {
         assertEquals(HomeState.ATTENTION, homeStateOf(running.copy(barState = BarState.COMMAND_READY), false))
         assertEquals(HomeState.PAUSED, homeStateOf(TaskStatus(phase = TaskPhase.PAUSED), false))
         assertEquals(HomeState.PAUSED, homeStateOf(running.copy(heldByLock = true), false))
-        assertEquals(HomeState.REST, homeStateOf(TaskStatus(phase = TaskPhase.RESTING), false))
     }
 
     @Test

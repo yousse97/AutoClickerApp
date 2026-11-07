@@ -246,7 +246,7 @@ class OverlayService : Service() {
         binding.textCommand.visibility = if (showName) View.VISIBLE else View.GONE
         binding.textCommand.show(name.orEmpty())
         binding.textDetail.show(detailOf(status, idle))
-        val active = status.phase == TaskPhase.RUNNING || status.phase == TaskPhase.RESTING
+        val active = status.phase == TaskPhase.RUNNING
         binding.buttonStart.isEnabled = !active
         binding.buttonPause.isEnabled = active
         applyKeepScreenOn(if (idle) status.idleKeepScreen else active && status.keepScreenOn)
@@ -282,7 +282,6 @@ class OverlayService : Service() {
         HomeState.RUNNING -> R.string.status_running
         HomeState.ATTENTION -> R.string.status_attention
         HomeState.PAUSED -> R.string.status_paused
-        HomeState.REST -> R.string.status_rest
         HomeState.IDLE -> R.string.status_idle
         HomeState.ERROR -> R.string.status_error_short
         HomeState.STOPPED -> R.string.status_stopped
@@ -292,7 +291,6 @@ class OverlayService : Service() {
         HomeState.RUNNING -> R.color.overlay_running
         HomeState.ATTENTION -> R.color.overlay_attention
         HomeState.PAUSED -> R.color.overlay_paused
-        HomeState.REST -> R.color.overlay_rest
         HomeState.IDLE -> R.color.overlay_idle
         HomeState.ERROR -> R.color.overlay_error
         HomeState.STOPPED -> R.color.overlay_stopped
@@ -388,7 +386,6 @@ class OverlayService : Service() {
         val shutdown = PendingIntent.getService(this, 1, shutdownIntent, flags)
         val text = when (phase) {
             TaskPhase.RUNNING -> R.string.notification_running
-            TaskPhase.RESTING -> R.string.notification_resting
             TaskPhase.PAUSED -> R.string.notification_paused
             TaskPhase.IDLE -> R.string.notification_idle
         }

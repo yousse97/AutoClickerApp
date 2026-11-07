@@ -10,8 +10,8 @@ class SessionGuardTest {
     private val minute = 60_000L
     private val guard = SessionGuard()
 
-    private fun observe(foreground: Foreground, now: Long, resting: Boolean = false) =
-        guard.observe(foreground, resting, now)
+    private fun observe(foreground: Foreground, now: Long, idle: Boolean = false) =
+        guard.observe(foreground, idle, now)
 
     @Test
     fun `a locked phone that returns within 15 minutes carries on`() {
@@ -29,9 +29,9 @@ class SessionGuardTest {
     }
 
     @Test
-    fun `the lock timeout starts when rest ends, not during rest`() {
-        observe(Foreground.LOCKED, 0, resting = true)
-        assertEquals(GuardAction.NONE, observe(Foreground.LOCKED, 120 * minute, resting = true))
+    fun `the lock timeout starts when idle hours end`() {
+        observe(Foreground.LOCKED, 0, idle = true)
+        assertEquals(GuardAction.NONE, observe(Foreground.LOCKED, 120 * minute, idle = true))
         assertEquals(GuardAction.NONE, observe(Foreground.LOCKED, 121 * minute))
         assertEquals(GuardAction.NONE, observe(Foreground.LOCKED, 135 * minute))
         assertEquals(GuardAction.STOP_LOCKED, observe(Foreground.LOCKED, 136 * minute))
@@ -60,19 +60,9 @@ class SessionGuardTest {
     }
 
     @Test
-    fun `the end of a rest reopens WOLF from home at once but never from another app`() {
-        guard.onRestFinished()
-        assertEquals(GuardAction.RELAUNCH, observe(Foreground.HOME, 0))
-
-        guard.onRestFinished()
-        assertEquals(GuardAction.NONE, observe(Foreground.OTHER_APP, 1_000))
-        assertEquals(GuardAction.NONE, observe(Foreground.HOME, 2_000))
-    }
-
-    @Test
-    fun `nothing happens on the home screen during rest`() {
-        assertEquals(GuardAction.NONE, observe(Foreground.HOME, 0, resting = true))
-        assertEquals(GuardAction.NONE, observe(Foreground.HOME, 30 * minute, resting = true))
+    fun `nothing happens on the home screen during idle hours`() {
+        assertEquals(GuardAction.NONE, observe(Foreground.HOME, 0, idle = true))
+        assertEquals(GuardAction.NONE, observe(Foreground.HOME, 30 * minute, idle = true))
     }
 
     @Test

@@ -4,7 +4,6 @@ import android.content.Context
 import com.autoclicker.chattask.core.CommandEntry
 import com.autoclicker.chattask.core.DailySchedule
 import com.autoclicker.chattask.core.ReactiveConfig
-import com.autoclicker.chattask.core.ScheduleOffsets
 import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.security.SecureStore
@@ -14,13 +13,10 @@ import org.json.JSONObject
 /** A running session saved to disk so it can resume if Android kills the process. */
 data class SessionSnapshot(
     val paused: Boolean,
-    val offsets: ScheduleOffsets,
     val sent: Int,
     val failed: Int,
     val popups: Int,
     val savedAtWallMs: Long,
-    val resting: Boolean,
-    val workCycle: Int,
     val timers: List<TimerOffset?>,
 )
 
@@ -129,16 +125,10 @@ class SettingsStore(context: Context) {
         sessionPrefs.edit()
             .putBoolean(KEY_S_ACTIVE, true)
             .putBoolean(KEY_S_PAUSED, snapshot.paused)
-            .putLong(KEY_S_ANCHOR, snapshot.offsets.anchorInMs)
-            .putLong(KEY_S_NEXT, snapshot.offsets.nextInMs)
-            .putLong(KEY_S_END, snapshot.offsets.endInMs)
-            .putLong(KEY_S_INTERVAL, snapshot.offsets.intervalMs)
             .putInt(KEY_S_SENT, snapshot.sent)
             .putInt(KEY_S_FAILED, snapshot.failed)
             .putInt(KEY_S_POPUPS, snapshot.popups)
             .putLong(KEY_S_SAVED_AT, snapshot.savedAtWallMs)
-            .putBoolean(KEY_S_RESTING, snapshot.resting)
-            .putInt(KEY_S_WORK_CYCLE, snapshot.workCycle)
             .putString(KEY_S_TIMERS, encodeTimers(snapshot.timers))
             .apply()
     }
@@ -147,18 +137,10 @@ class SettingsStore(context: Context) {
         if (!sessionPrefs.contains(KEY_S_ACTIVE)) return null
         return SessionSnapshot(
             paused = sessionPrefs.getBoolean(KEY_S_PAUSED, false),
-            offsets = ScheduleOffsets(
-                anchorInMs = sessionPrefs.getLong(KEY_S_ANCHOR, 0),
-                nextInMs = sessionPrefs.getLong(KEY_S_NEXT, 0),
-                endInMs = sessionPrefs.getLong(KEY_S_END, 0),
-                intervalMs = sessionPrefs.getLong(KEY_S_INTERVAL, 0),
-            ),
             sent = sessionPrefs.getInt(KEY_S_SENT, 0),
             failed = sessionPrefs.getInt(KEY_S_FAILED, 0),
             popups = sessionPrefs.getInt(KEY_S_POPUPS, 0),
             savedAtWallMs = sessionPrefs.getLong(KEY_S_SAVED_AT, 0),
-            resting = sessionPrefs.getBoolean(KEY_S_RESTING, false),
-            workCycle = sessionPrefs.getInt(KEY_S_WORK_CYCLE, 1),
             timers = sessionPrefs.getString(KEY_S_TIMERS, null)?.let(::decodeTimers).orEmpty(),
         )
     }
@@ -244,7 +226,6 @@ class SettingsStore(context: Context) {
 
         private const val KEY_COMMAND = "command"
         private const val KEY_COMMANDS = "commands"
-        private const val KEY_REST = "rest_sec"
         private const val KEY_OVERLAY_SIZE = "overlay_size_setting"
         private const val KEY_OVERLAY_X = "overlay_x"
         private const val KEY_OVERLAY_Y = "overlay_y"
@@ -272,15 +253,9 @@ class SettingsStore(context: Context) {
 
         private const val KEY_S_ACTIVE = "active"
         private const val KEY_S_PAUSED = "paused"
-        private const val KEY_S_ANCHOR = "anchor_in"
-        private const val KEY_S_NEXT = "next_in"
-        private const val KEY_S_END = "end_in"
-        private const val KEY_S_INTERVAL = "interval"
         private const val KEY_S_SENT = "sent"
         private const val KEY_S_FAILED = "failed"
         private const val KEY_S_POPUPS = "popups"
         private const val KEY_S_SAVED_AT = "saved_at"
-        private const val KEY_S_RESTING = "resting"
-        private const val KEY_S_WORK_CYCLE = "work_cycle"
     }
 }

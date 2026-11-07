@@ -3,10 +3,7 @@ package com.autoclicker.chattask.service
 import com.autoclicker.chattask.core.CommandState
 import com.autoclicker.chattask.core.CommandTimers
 import com.autoclicker.chattask.core.JitterPolicy
-import com.autoclicker.chattask.core.ScheduleOffsets
-import com.autoclicker.chattask.core.SessionSchedule
 import com.autoclicker.chattask.core.TimerOffset
-import com.autoclicker.chattask.core.WorkRestScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -15,7 +12,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
@@ -28,11 +24,8 @@ data class CommandView(val state: CommandState, val nextInMs: Long?)
 data class RunnerView(
     val phase: TaskPhase,
     val nextInMs: Long,
-    val sessionLeftMs: Long,
     val sent: Int,
     val failed: Int,
-    val resting: Boolean = false,
-    val workCycle: Int = 1,
     val allIdle: Boolean = false,
     val nextIndex: Int? = null,
     val nextTotalMs: Long = 0,
@@ -42,9 +35,9 @@ data class RunnerView(
 /**
  * The send loop. All methods must be called on the thread of [scope].
  *
- * The session period and work and rest live in one plan, and each command has its own timer in
- * [CommandTimers]. The loop polls a monotonic [clock] once a second rather than delaying for a
- * whole interval, because a coroutine delay stops counting during deep sleep.
+ * A session has no length of its own: it runs until stopped, and each command's hours in
+ * [CommandTimers] follow the real clock. The loop polls a monotonic [clock] once a second rather
+ * than delaying for a whole interval, because a coroutine delay stops counting during deep sleep.
  *
  * Popup handling is deliberately absent: it has no way to touch these timers.
  */
@@ -59,25 +52,16 @@ class TaskRunner(
     interface Listener {
         fun onTick(view: RunnerView)
 
-        /** The plan or counters changed, so this is the moment to persist. */
+        /** The timers or counters changed, so this is the moment to persist. */
         fun onPlanChanged()
-
-        /** Work is starting again, so the target app should be brought back. */
-        fun onRestFinished() = Unit
 
         /** A pending send ran out of active time, so it will not be sent. */
         fun onCommandSkipped(index: Int) = Unit
-
-        fun onFinished(view: RunnerView)
     }
 
     private var job: Job? = null
-    private var schedule: SessionSchedule? = null
     private var timers: CommandTimers? = null
     private var jitter = JitterPolicy(0, 0)
-    private var cycles: WorkRestScheduler? = null
-    private var resting = false
-    private var workCycle = 1
     private var pausedAtMs: Long? = null
     private var actionInFlight = false
     private var lastSendMs: Long? = null
@@ -90,25 +74,17 @@ class TaskRunner(
         private set
 
     fun start(
-        plan: SessionSchedule,
+        commandTimers: CommandTimers,
         jitterPolicy: JitterPolicy,
-        workRest: WorkRestScheduler? = null,
         sentSoFar: Int = 0,
         failedSoFar: Int = 0,
         paused: Boolean = false,
-        isResting: Boolean = false,
-        workCycleSoFar: Int = 1,
-        commandTimers: CommandTimers = CommandTimers.single(plan, DEFAULT_FIRST_DELAY_MS),
     ) {
         job?.cancel()
-        schedule = plan
         timers = commandTimers
         // A restored session can be overdue, and its late send must also restart the interval.
         commandTimers.markOverdue(clock())
         jitter = jitterPolicy
-        cycles = workRest
-        resting = isResting
-        workCycle = workCycleSoFar
         sent = sentSoFar
         failed = failedSoFar
         if (paused) {
@@ -116,7 +92,7 @@ class TaskRunner(
             phase = TaskPhase.PAUSED
         } else {
             pausedAtMs = null
-            phase = activePhase()
+            phase = TaskPhase.RUNNING
             launchLoop()
         }
         listener.onPlanChanged()
@@ -124,7 +100,7 @@ class TaskRunner(
     }
 
     fun pause() {
-        if (phase != TaskPhase.RUNNING && phase != TaskPhase.RESTING) return
+        if (phase != TaskPhase.RUNNING) return
         job?.cancel()
         pausedAtMs = clock()
         phase = TaskPhase.PAUSED
@@ -135,11 +111,9 @@ class TaskRunner(
     fun resume() {
         if (phase != TaskPhase.PAUSED) return
         val pausedAt = pausedAtMs ?: return
-        val pausedFor = clock() - pausedAt
-        schedule = schedule?.shiftedBy(pausedFor)
-        timers?.shiftBy(pausedFor)
+        timers?.shiftBy(clock() - pausedAt)
         pausedAtMs = null
-        phase = activePhase()
+        phase = TaskPhase.RUNNING
         launchLoop()
         listener.onPlanChanged()
         listener.onTick(view())
@@ -148,29 +122,21 @@ class TaskRunner(
     fun stop() {
         job?.cancel()
         job = null
-        schedule = null
         timers = null
-        cycles = null
-        resting = false
         pausedAtMs = null
         phase = TaskPhase.IDLE
     }
 
     fun view(): RunnerView {
         val now = pausedAtMs ?: clock()
-        val plan = schedule
         val active = timers
-        val next = active?.nextIndex()?.takeUnless { resting }
-        val commandLeft = next?.let { active.nextInMs(it, now) }
+        val next = active?.nextIndex()
         return RunnerView(
             phase = phase,
-            nextInMs = commandLeft ?: plan?.takeIf { resting }?.let { max(0, it.nextFireMs - now) } ?: 0,
-            sessionLeftMs = plan?.let { max(0, it.endMs - now) } ?: 0,
+            nextInMs = next?.let { active.nextInMs(it, now) } ?: 0,
             sent = sent,
             failed = failed,
-            resting = resting,
-            workCycle = workCycle,
-            allIdle = !resting && active?.allIdle == true,
+            allIdle = active?.allIdle == true,
             nextIndex = next,
             nextTotalMs = next?.let { active.intervalMs(it) } ?: 0,
             commands = active?.let { list ->
@@ -179,74 +145,30 @@ class TaskRunner(
         )
     }
 
-    fun offsets(): ScheduleOffsets? = schedule?.offsetsFrom(pausedAtMs ?: clock())
-
     fun timerOffsets(): List<TimerOffset?> = timers?.offsets(pausedAtMs ?: clock()).orEmpty()
 
     private fun launchLoop() {
         job = scope.launch {
             while (isActive) {
-                val plan = schedule ?: return@launch
+                val active = timers ?: return@launch
                 val now = clock()
-                if (plan.isFinished(now) && !actionInFlight) {
-                    if (!beginNextPeriod(plan, now)) return@launch
-                    continue
-                }
-                val due = if (resting) emptyList() else dueCommands(now)
+                active.refresh(now, wallClock()).forEach(listener::onCommandSkipped)
+                val due = active.dueOrder(now)
                 val gapPassed = lastSendMs?.let { now - it >= SEND_GAP_MS } != false
                 if (due.isNotEmpty() && !actionInFlight && gapPassed) {
                     runCycle(due)
                     continue
                 }
                 listener.onTick(view())
-                delay(untilNextDeadline(plan, now))
+                delay(untilNextDeadline(active, now))
             }
         }
     }
 
-    private fun dueCommands(now: Long): List<Int> {
-        val active = timers ?: return emptyList()
-        val skipped = active.refresh(now, wallClock())
-        skipped.forEach(listener::onCommandSkipped)
-        return active.dueOrder(now)
+    private fun untilNextDeadline(active: CommandTimers, now: Long): Long {
+        val nextFire = active.nextIndex()?.let { active.nextInMs(it, now) } ?: TICK_MS
+        return min(nextFire, TICK_MS).coerceAtLeast(MIN_TICK_MS)
     }
-
-    private fun untilNextDeadline(plan: SessionSchedule, now: Long): Long {
-        val active = timers
-        val nextFire = active?.nextIndex()?.takeUnless { resting }?.let { active.nextInMs(it, now) }
-        val deadline = min(nextFire ?: TICK_MS, plan.endMs - now)
-        return deadline.coerceIn(MIN_TICK_MS, TICK_MS)
-    }
-
-    /** Moves between work and rest. Returns false when the session is over. */
-    private fun beginNextPeriod(plan: SessionSchedule, now: Long): Boolean {
-        val workRest = cycles?.takeIf { it.loops }
-        when {
-            workRest == null -> {
-                val finalView = view()
-                stop()
-                listener.onFinished(finalView)
-                return false
-            }
-            resting -> {
-                resting = false
-                workCycle++
-                schedule = workRest.workPlan(now)
-                timers?.restart()
-                listener.onRestFinished()
-            }
-            else -> {
-                resting = true
-                schedule = workRest.restPlan(plan)
-            }
-        }
-        phase = activePhase()
-        listener.onPlanChanged()
-        listener.onTick(view())
-        return true
-    }
-
-    private fun activePhase() = if (resting) TaskPhase.RESTING else TaskPhase.RUNNING
 
     /**
      * Sends the earliest due command. It runs to completion even if paused midway, so a message is
@@ -282,6 +204,5 @@ class TaskRunner(
 
         /** Each check reads WOLF's screen, so a held send is not rechecked every second. */
         const val HOLD_RECHECK_MS = 2_000L
-        const val DEFAULT_FIRST_DELAY_MS = 3_000L
     }
 }

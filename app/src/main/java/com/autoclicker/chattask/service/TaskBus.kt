@@ -7,17 +7,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-enum class TaskPhase { IDLE, RUNNING, RESTING, PAUSED }
+enum class TaskPhase { IDLE, RUNNING, PAUSED }
 
 data class TaskStatus(
     val phase: TaskPhase = TaskPhase.IDLE,
     val target: String = "",
     val nextInMs: Long = 0,
-    val sessionLeftMs: Long = 0,
     val sent: Int = 0,
     val failed: Int = 0,
     val popups: Int = 0,
-    val workCycle: Int = 1,
     val reactions: Int = 0,
     val barState: BarState = BarState.NORMAL,
     /** The wall clock time idle ends, or 0 when the daily schedule is not idling. */
@@ -47,10 +45,8 @@ object TaskBus {
         it.copy(
             phase = view.phase,
             nextInMs = view.nextInMs,
-            sessionLeftMs = view.sessionLeftMs,
             sent = view.sent,
             failed = view.failed,
-            workCycle = view.workCycle,
             nextIndex = view.nextIndex,
             nextTotalMs = view.nextTotalMs,
             commands = view.commands,

@@ -8,7 +8,7 @@ enum class GuardAction { NONE, RELAUNCH, STOP_LOCKED, STOP_RELAUNCH_FAILED, STOP
 /**
  * Decides when a session should reopen WOLF or stop. Pure logic, called once a second.
  *
- * Rest, a locked screen and another app are never failures. Not thread-safe.
+ * Idle hours, a locked screen and another app are never failures. Not thread-safe.
  */
 class SessionGuard(
     private val lockTimeoutMs: Long = 15 * 60_000L,
@@ -18,25 +18,21 @@ class SessionGuard(
 ) {
     private var lockedSinceMs: Long? = null
     private var homeSinceMs: Long? = null
-    private var relaunchSoon = false
     private var relaunchFailures = 0
     private var nextRetryMs = 0L
 
     var sendFailures = 0
         private set
 
-    fun observe(foreground: Foreground, resting: Boolean, now: Long): GuardAction {
-        // The lock timeout counts work time only, so it starts when a rest ends.
-        if (foreground != Foreground.LOCKED || resting) lockedSinceMs = null
-        if (foreground != Foreground.HOME || resting) homeSinceMs = null
-        if (resting) return GuardAction.NONE
+    fun observe(foreground: Foreground, idle: Boolean, now: Long): GuardAction {
+        // The lock timeout counts active hours only, so it starts when idle hours end.
+        if (foreground != Foreground.LOCKED || idle) lockedSinceMs = null
+        if (foreground != Foreground.HOME || idle) homeSinceMs = null
+        if (idle) return GuardAction.NONE
         return when (foreground) {
             Foreground.LOCKED -> onLocked(now)
             Foreground.HOME -> onHome(now)
-            Foreground.WOLF, Foreground.OTHER_APP -> {
-                relaunchSoon = false
-                GuardAction.NONE
-            }
+            Foreground.WOLF, Foreground.OTHER_APP -> GuardAction.NONE
         }
     }
 
@@ -47,20 +43,13 @@ class SessionGuard(
 
     private fun onHome(now: Long): GuardAction {
         val since = homeSinceMs ?: now.also { homeSinceMs = it }
-        val waitedLongEnough = now - since >= homeTimeoutMs && now >= nextRetryMs
-        if (!relaunchSoon && !waitedLongEnough) return GuardAction.NONE
-        relaunchSoon = false
+        if (now - since < homeTimeoutMs || now < nextRetryMs) return GuardAction.NONE
         homeSinceMs = null
         return GuardAction.RELAUNCH
     }
 
     /** Spaces out navigation attempts, so a failing one does not fight the user every second. */
     fun mayNavigate(now: Long): Boolean = now >= nextRetryMs
-
-    /** A rest has ended, so the home screen need not stay up for the full wait. */
-    fun onRestFinished() {
-        relaunchSoon = true
-    }
 
     fun onRelaunchResult(success: Boolean, now: Long): GuardAction {
         if (success) {

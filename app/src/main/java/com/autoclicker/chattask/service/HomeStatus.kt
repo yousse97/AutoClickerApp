@@ -2,11 +2,10 @@ package com.autoclicker.chattask.service
 
 import com.autoclicker.chattask.core.BarState
 
-enum class HomeState { RUNNING, ATTENTION, PAUSED, REST, IDLE, ERROR, STOPPED }
+enum class HomeState { RUNNING, ATTENTION, PAUSED, IDLE, ERROR, STOPPED }
 
 /** The single state shown on the home screen card. */
 fun homeStateOf(status: TaskStatus, stoppedByError: Boolean): HomeState = when {
-    status.phase == TaskPhase.RESTING -> HomeState.REST
     status.phase == TaskPhase.PAUSED -> HomeState.PAUSED
     status.idleUntilMs > 0 -> HomeState.IDLE
     status.heldByLock -> HomeState.PAUSED

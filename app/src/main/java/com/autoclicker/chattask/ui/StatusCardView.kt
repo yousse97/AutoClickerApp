@@ -96,7 +96,6 @@ class StatusCardView(private val context: Context, private val binding: Activity
         HomeState.RUNNING -> R.color.status_running
         HomeState.ATTENTION -> R.color.status_attention
         HomeState.PAUSED -> R.color.status_paused
-        HomeState.REST -> R.color.status_rest
         HomeState.IDLE -> R.color.status_idle
         HomeState.ERROR -> R.color.status_error
         HomeState.STOPPED -> R.color.status_stopped
@@ -106,7 +105,6 @@ class StatusCardView(private val context: Context, private val binding: Activity
         HomeState.RUNNING -> R.string.status_running
         HomeState.ATTENTION -> R.string.status_attention
         HomeState.PAUSED -> R.string.status_paused
-        HomeState.REST -> R.string.status_rest
         HomeState.IDLE -> R.string.status_idle
         HomeState.ERROR -> R.string.status_error
         HomeState.STOPPED -> R.string.status_stopped
@@ -120,7 +118,6 @@ class StatusCardView(private val context: Context, private val binding: Activity
         HomeState.PAUSED -> context.getString(
             if (status.heldByLock) R.string.notice_screen_locked else R.string.overlay_paused,
         )
-        HomeState.REST -> context.getString(R.string.status_rest_left, formatDuration(status.sessionLeftMs))
         HomeState.IDLE -> context.getString(R.string.status_idle_until, time(status.idleUntilMs, false))
         HomeState.ERROR -> if (status.notice != 0) context.getString(status.notice) else context.getString(R.string.status_error_reason)
         HomeState.STOPPED -> context.getString(R.string.status_stopped_reason)

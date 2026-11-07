@@ -44,7 +44,6 @@
     <string name="notice_open_chat">افتح قناة في WOLF أولًا</string>
     <string name="notice_enable_service">فعّل خدمة إمكانية الوصول</string>
     <string name="notice_invalid_settings">راجع الإعدادات في التطبيق</string>
-    <string name="notice_finished">انتهت الجلسة</string>
     <string name="notice_screen_locked">في الانتظار: الشاشة مطفأة أو مقفلة</string>
     <string name="notice_target_hidden">في الانتظار: WOLF غير ظاهر</string>
     <string name="notice_no_input">تم التخطي: لم يتم العثور على مربع الرسالة</string>
@@ -71,8 +70,6 @@
     <string name="error_too_many_commands">استخدم 5 أوامر كحد أقصى.</string>
     <string name="error_room_too_long">معرّف الغرفة طويل جدًا.</string>
 
-    <string name="overlay_resting">راحة %1$s</string>
-    <string name="notification_resting">في فترة راحة</string>
     <string name="notice_recovering">جارٍ إعادة فتح تطبيق الدردشة</string>
     <string name="notice_not_launchable">تعذر فتح التطبيق المستهدف</string>
     <string name="notice_no_chat">لم يتم العثور على شاشة الدردشة</string>
@@ -189,8 +186,6 @@
     <string name="status_attention">تنبيه</string>
     <string name="status_send_soon">سيُرسل أمر قريبًا.</string>
     <string name="status_paused">متوقف مؤقتًا</string>
-    <string name="status_rest">فترة راحة</string>
-    <string name="status_rest_left">الوقت المتبقي: %1$s</string>
     <string name="status_idle">في وضع الانتظار</string>
     <string name="status_idle_until">في الانتظار حتى %1$s</string>
     <string name="status_error">توقف بسبب خطأ</string>

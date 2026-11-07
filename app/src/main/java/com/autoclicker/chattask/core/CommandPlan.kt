@@ -57,7 +57,7 @@ class CommandTimers(
     }
 
     private fun newPlan(now: Long, intervalMs: Long) =
-        SessionSchedule.create(now, firstDelayMs, intervalMs, FAR_FUTURE_MS)
+        SessionSchedule.create(now, firstDelayMs, intervalMs)
 
     /** Commands to send now, earliest due first. */
     fun dueOrder(now: Long): List<Int> = slots.indices
@@ -72,12 +72,6 @@ class CommandTimers(
         val plan = slot.plan ?: return
         slot.plan = if (slot.held) plan.restartedAt(now, jitterMs) else plan.advance(now, jitterMs)
         slot.held = false
-    }
-
-    /** Sends the next period back through [refresh], as after a rest. */
-    fun restart() = slots.forEach {
-        it.plan = null
-        it.held = false
     }
 
     fun shiftBy(deltaMs: Long) = slots.forEach { it.plan = it.plan?.shiftedBy(deltaMs) }
@@ -113,7 +107,6 @@ class CommandTimers(
                 slots[index].plan = SessionSchedule(
                     anchorMs = baseMs + offset.anchorInMs,
                     nextFireMs = baseMs + offset.nextInMs,
-                    endMs = FAR_FUTURE_MS,
                     intervalMs = specs[index].intervalMs,
                 )
                 slots[index].held = offset.held
@@ -122,8 +115,6 @@ class CommandTimers(
     }
 
     companion object {
-        private const val FAR_FUTURE_MS = Long.MAX_VALUE / 4
-
         fun of(commands: List<CommandEntry>, firstDelayMs: Long) = CommandTimers(
             commands.map { command -> Spec(command.intervalSec * 1000L, command::isActive) },
             firstDelayMs,

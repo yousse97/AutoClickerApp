@@ -44,7 +44,6 @@
     <string name="notice_open_chat">Open a WOLF channel first</string>
     <string name="notice_enable_service">Turn on the accessibility service</string>
     <string name="notice_invalid_settings">Check the settings in the app</string>
-    <string name="notice_finished">Session finished</string>
     <string name="notice_screen_locked">Waiting: screen off or locked</string>
     <string name="notice_target_hidden">Waiting: WOLF is not on screen</string>
     <string name="notice_no_input">Skipped: no message box found</string>
@@ -71,8 +70,6 @@
     <string name="error_too_many_commands">Use at most 5 commands.</string>
     <string name="error_room_too_long">The room identifier is too long.</string>
 
-    <string name="overlay_resting">Rest %1$s</string>
-    <string name="notification_resting">Resting</string>
     <string name="notice_recovering">Reopening the chat app</string>
     <string name="notice_not_launchable">Could not open the target app</string>
     <string name="notice_no_chat">Chat screen not found</string>
@@ -189,8 +186,6 @@
     <string name="status_attention">Attention</string>
     <string name="status_send_soon">A command is about to be sent.</string>
     <string name="status_paused">Temporarily paused</string>
-    <string name="status_rest">Rest period</string>
-    <string name="status_rest_left">Time left: %1$s</string>
     <string name="status_idle">Idle</string>
     <string name="status_idle_until">Idle until %1$s</string>
     <string name="status_error">Stopped because of an error</string>
