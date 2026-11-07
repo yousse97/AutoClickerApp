@@ -281,6 +281,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
                 phase = TaskPhase.IDLE,
                 target = "",
                 nextInMs = 0,
+                commands = emptyList(),
                 keepScreenOn = false,
                 notice = notice,
             )
