@@ -18,7 +18,7 @@ import java.time.LocalDateTime
 
 class OperatingModeTest {
     private val commands = listOf(CommandEntry("my command", 60))
-    private val replies = ReactiveConfig(command = "my reply", room = "two")
+    private val replies = ReactiveConfig(listOf("a phrase"), "my reply", "two")
     private val scheduled = TaskConfig(commands = commands, reactive = replies)
     private val autoReply = scheduled.copy(mode = OperatingMode.AUTO_REPLY)
     private val granted = PermissionState(accessibility = true, overlay = true, notifications = true, battery = true)
@@ -64,7 +64,7 @@ class OperatingModeTest {
         val noReply = TaskConfig(commands = commands)
         assertTrue(noReply.validate().isEmpty())
         assertEquals(
-            listOf(ConfigError.REACTIVE_NO_COMMAND, ConfigError.REACTIVE_ROOM_REQUIRED),
+            listOf(ConfigError.REACTIVE_NO_TRIGGER, ConfigError.REACTIVE_NO_COMMAND, ConfigError.REACTIVE_ROOM_REQUIRED),
             noReply.copy(mode = OperatingMode.AUTO_REPLY).validate(),
         )
     }

@@ -9,7 +9,7 @@ data class ReplySlot(val id: Long, val startsInMs: Long)
 
 /** Settings for Auto reply, which answers a trigger phrase instead of following a timer. */
 data class ReactiveConfig(
-    val triggers: List<String> = DEFAULT_TRIGGERS,
+    val triggers: List<String> = emptyList(),
     val command: String = "",
     /** Replies go out only here, so this is required. */
     val room: String = "",
@@ -27,14 +27,6 @@ data class ReactiveConfig(
         if (!window.isComplete) return null
         val startsIn = if (window.isActive(now)) 0 else Duration.between(now, window.nextStart(now)).toMillis()
         return ReplySlot(window.nextEnd(now).toEpochSecond(ZoneOffset.UTC), startsIn)
-    }
-
-    companion object {
-        val DEFAULT_TRIGGERS = listOf(
-            "your animal is back to full energy!",
-            "Your animal is back to full energy!",
-            "عاد حيوانك لطاقته الكاملة!",
-        )
     }
 }
 

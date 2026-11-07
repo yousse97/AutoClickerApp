@@ -29,7 +29,7 @@ class ReactiveDetectorTest {
         val autoReply = OperatingMode.AUTO_REPLY
         assertTrue(TaskConfig(commands = own, reactive = ReactiveConfig(command = "")).validate().isEmpty())
         assertEquals(
-            listOf(ConfigError.REACTIVE_NO_COMMAND, ConfigError.REACTIVE_ROOM_REQUIRED),
+            listOf(ConfigError.REACTIVE_NO_TRIGGER, ConfigError.REACTIVE_NO_COMMAND, ConfigError.REACTIVE_ROOM_REQUIRED),
             TaskConfig(mode = autoReply, commands = own).validate(),
         )
         assertEquals(
@@ -38,7 +38,7 @@ class ReactiveDetectorTest {
         )
         assertEquals(
             listOf(ConfigError.REACTIVE_ROOM_REQUIRED),
-            TaskConfig(mode = autoReply, commands = own, reactive = ReactiveConfig(command = "!go")).validate(),
+            TaskConfig(mode = autoReply, commands = own, reactive = ReactiveConfig(listOf("a phrase"), "!go")).validate(),
         )
     }
 

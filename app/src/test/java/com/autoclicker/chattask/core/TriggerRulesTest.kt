@@ -146,7 +146,7 @@ class TriggerRulesTest {
 
     @Test
     fun `no notification access warns in Auto reply but does not block Start`() {
-        val config = TaskConfig(mode = OperatingMode.AUTO_REPLY, reactive = ReactiveConfig(command = "x", room = "y"))
+        val config = TaskConfig(mode = OperatingMode.AUTO_REPLY, reactive = ReactiveConfig(listOf("a phrase"), "x", "y"))
         val off = PermissionState(true, true, true, true, notificationAccess = false)
         val warning = homeWarnings(config, off).single()
         assertEquals(HomeWarning.NOTIFICATION_ACCESS, warning)

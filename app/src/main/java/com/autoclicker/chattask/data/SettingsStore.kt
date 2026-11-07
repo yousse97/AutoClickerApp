@@ -235,7 +235,7 @@ class SettingsStore(context: Context) {
         private const val JSON_ANCHOR = "anchor"
         private const val JSON_NEXT = "next"
         private const val JSON_HELD = "held"
-        private const val LEGACY_INTERVAL_SEC = 610
+        private const val LEGACY_INTERVAL_SEC = 0
         private val LEGACY_NEW_KEYWORDS = listOf("x", "X")
 
         private const val KEY_COMMAND = "command"
