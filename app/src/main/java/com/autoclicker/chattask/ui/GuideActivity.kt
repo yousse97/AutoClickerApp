@@ -29,6 +29,7 @@ class GuideActivity : AppCompatActivity() {
         }
         binding.buttonBattery.setOnClickListener { openBatterySetting(packageUri) }
         binding.buttonAutostart.setOnClickListener { open(appInfo) }
+        binding.buttonNotificationAccess.setOnClickListener { openNotificationAccess(this) }
     }
 
     @SuppressLint("BatteryLife")

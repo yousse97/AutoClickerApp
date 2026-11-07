@@ -41,7 +41,7 @@ data class TaskConfig(
     /** The reply settings to act on, or null in Scheduled mode, where nothing may reply. */
     val replies: ReactiveConfig? get() = reactive.takeIf { repliesOnly }
 
-    val activeRestrict: Boolean get() = if (repliesOnly) reactive.restrictToRoom else restrictToRoom
+    val activeRestrict: Boolean get() = repliesOnly || restrictToRoom
     val activeRoom: String get() = if (repliesOnly) reactive.room else targetRoom
     val activeReturn: Boolean get() = if (repliesOnly) reactive.returnBeforeSend else returnBeforeSend
 
@@ -73,7 +73,7 @@ data class TaskConfig(
         if (reactive.triggers.isEmpty()) add(ConfigError.REACTIVE_NO_TRIGGER)
         if (reactive.command.isBlank()) add(ConfigError.REACTIVE_NO_COMMAND)
         if (reactive.command.trim().length > MAX_COMMAND_LENGTH) add(ConfigError.COMMAND_TOO_LONG)
-        if (reactive.restrictToRoom && reactive.room.isBlank()) add(ConfigError.REACTIVE_ROOM_REQUIRED)
+        if (reactive.room.isBlank()) add(ConfigError.REACTIVE_ROOM_REQUIRED)
     }
 
     companion object {

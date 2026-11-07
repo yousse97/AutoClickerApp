@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.EventType
 import com.autoclicker.chattask.core.Foreground
+import com.autoclicker.chattask.core.StopRule
+import com.autoclicker.chattask.core.StoppedAction
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.data.SettingsStore
@@ -29,22 +31,25 @@ class ScheduleDriver(
         overlayDismissed = true
     }
 
+    /** After a stop for a failure. A person pressing Stop holds until Start instead. */
     fun blockAfterStop() {
         store.blockedUntilMs = ScheduleKeeper.blockUntil(config, LocalDateTime.now())
     }
 
     /** Called each second while nothing is running. */
     fun tickStopped() {
+        if (hasSession()) return
         val now = LocalDateTime.now()
-        val hasHours = config.activeHours.any { !it.allDay }
-        if (!hasHours || hasSession()) {
-            if (!hasSession()) clearIdle()
-            return
-        }
-        when {
-            !config.activeHours.any { it.isActive(now) } -> showIdle(now)
-            System.currentTimeMillis() < store.blockedUntilMs -> showIdle(now)
-            else -> startForSchedule(now)
+        val action = StopRule.whenStopped(
+            hasHours = config.activeHours.any { !it.allDay },
+            inHours = config.activeHours.any { it.isActive(now) },
+            blockedUntilMs = store.blockedUntilMs,
+            nowMs = System.currentTimeMillis(),
+        )
+        when (action) {
+            StoppedAction.NONE -> clearIdle()
+            StoppedAction.SHOW_IDLE -> showIdle(now)
+            StoppedAction.START -> startForSchedule(now)
         }
     }
 

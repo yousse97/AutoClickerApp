@@ -22,6 +22,10 @@
         layout="@layout/row_permission" />
 
     <include
+        android:id="@+id/rowNotificationAccess"
+        layout="@layout/row_permission" />
+
+    <include
         android:id="@+id/rowExactAlarm"
         layout="@layout/row_permission"
         android:visibility="gone" />

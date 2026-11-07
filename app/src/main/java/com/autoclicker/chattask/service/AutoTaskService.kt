@@ -15,8 +15,8 @@ import com.autoclicker.chattask.core.GuardAction
 import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.SessionGuard
+import com.autoclicker.chattask.core.StopRule
 import com.autoclicker.chattask.core.TaskConfig
-import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.WolfUi
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.data.SessionSnapshot
@@ -78,7 +78,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         popups = PopupEngine(this) { TaskBus.update { it.copy(popups = it.popups + 1) } }
         popups.launchIn(scope, nodeDispatcher)
         navigator = RoomNavigator(this, popups)
-        reactive = ReactiveEngine(this, sender, navigator, ::onReactionFinished, ::navigateForPopup)
+        reactive = ReactiveEngine(this, sender, navigator, ::onReactionFinished, ::navigateForReply)
         reactive.launchIn(scope, nodeDispatcher)
         runner = TaskRunner(
             scope = scope,
@@ -91,12 +91,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         anr = AnrHandler(this, { relaunch() }) {
             stopWithReason(EventType.STOPPED_ANR, R.string.alert_stopped_anr)
         }
-        scheduleDriver = ScheduleDriver(
-            service = this,
-            store = store,
-            hasSession = { session != null },
-            startSession = { startNewSession(scheduled = true) },
-        )
+        scheduleDriver = ScheduleDriver(this, store, { session != null }) { startNewSession(scheduled = true) }
         applyEventFilter(false)
         instance = this
         ScheduleKeeper.logProcessExits(this, store)
@@ -189,12 +184,18 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     fun pauseSession() = runner.pause()
 
+    /** Stays stopped until Start is pressed, whatever the schedule says. */
     fun stopSession() {
         if (!::runner.isInitialized) return
         if (session != null) EventLog.add(this, EventType.SESSION_STOPPED)
         runner.stop()
         endSession(notice = 0)
-        scheduleDriver.blockAfterStop()
+        store.blockedUntilMs = StopRule.UNTIL_START
+    }
+
+    /** Called only for the selected app. The text goes no further than the comparison. */
+    fun onTargetNotification(texts: List<CharSequence?>, postedMs: Long, messageMs: Long) {
+        if (session != null && isWorking()) reactive.onNotification(texts, postedMs, messageMs)
     }
 
     fun onOverlayClosed() = scheduleDriver.onOverlayClosed()
@@ -260,7 +261,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             keywords = newSession.config.popupKeywords,
             skipLists = newSession.config.skipListItems,
         )
-        reactive.configure(WolfUi.PACKAGE, newSession.config.replies)
+        reactive.configure(WolfUi.PACKAGE, newSession.config.replies, newSession.config.commands.map { it.text })
         TaskBus.update {
             it.copy(
                 target = WolfUi.PACKAGE,
@@ -347,30 +348,31 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         Alerts.post(this, message, offerRetry)
     }
 
-    private fun navigateForPopup(room: String) {
-        scope.launch {
-            val now = SystemClock.elapsedRealtime()
-            val inWolf = NodeTools.foreground(this@AutoTaskService) == Foreground.WOLF
-            if (session != null && inWolf && !relaunching && guard.mayNavigate(now)) relaunch(room)
-        }
+    /** A locked phone or a recent failure sends nothing, and failures count as they always do. */
+    private suspend fun navigateForReply(room: String): Boolean = withContext(Dispatchers.Main.immediate) {
+        val free = session != null && !relaunching && guard.mayNavigate(SystemClock.elapsedRealtime())
+        free && NodeTools.foreground(this@AutoTaskService) != Foreground.LOCKED && goTo(room)
     }
 
-    private fun relaunch(targetRoom: String? = null) {
+    private fun relaunch() {
         val current = session ?: return
         relaunching = true
-        scope.launch {
-            showNotice(R.string.notice_recovering)
-            val room = targetRoom ?: current.config.activeRoom.takeIf { current.config.activeRestrict }.orEmpty()
-            val result = withContext(nodeDispatcher) { navigator.recover(room, ::isWorking) }
-            relaunching = false
-            if (session == null) return@launch
-            val success = result == RecoveryResult.READY
-            if (result != RecoveryResult.ABORTED) {
-                EventLog.add(this@AutoTaskService, Notices.eventFor(result))
-                showNotice(Notices.forRecovery(result))
-                handle(guard.onRelaunchResult(success, SystemClock.elapsedRealtime()))
-            }
+        scope.launch { goTo(current.config.activeRoom.takeIf { current.config.activeRestrict }.orEmpty()) }
+    }
+
+    private suspend fun goTo(room: String): Boolean {
+        relaunching = true
+        showNotice(R.string.notice_recovering)
+        val result = withContext(nodeDispatcher) { navigator.recover(room, ::isWorking) }
+        relaunching = false
+        if (session == null) return false
+        val success = result == RecoveryResult.READY
+        if (result != RecoveryResult.ABORTED) {
+            EventLog.add(this, Notices.eventFor(result))
+            showNotice(Notices.forRecovery(result))
+            handle(guard.onRelaunchResult(success, SystemClock.elapsedRealtime()))
         }
+        return success
     }
 
     private suspend fun performCycle(index: Int): CycleResult {

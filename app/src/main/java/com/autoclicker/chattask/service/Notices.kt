@@ -1,20 +1,12 @@
 package com.autoclicker.chattask.service
 
-import android.content.Context
 import androidx.annotation.StringRes
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.ConfigError
 import com.autoclicker.chattask.core.EventType
-import com.autoclicker.chattask.data.EventLog
 
 /** Maps results to the log event and the message the overlay shows. */
 object Notices {
-    /** WOLF gives the popup no sender field that could be read, so that stays unconfirmed. */
-    fun logPopup(context: Context) {
-        EventLog.add(context, EventType.POPUP_TRIGGER)
-        EventLog.add(context, EventType.POPUP_SENDER_UNVERIFIED)
-    }
-
     fun eventFor(result: RecoveryResult): EventType = when (result) {
         RecoveryResult.READY, RecoveryResult.ABORTED -> EventType.RELAUNCH_OK
         RecoveryResult.ROOM_NOT_FOUND -> EventType.ROOM_NOT_FOUND

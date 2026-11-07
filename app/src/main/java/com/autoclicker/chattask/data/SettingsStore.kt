@@ -97,7 +97,6 @@ class SettingsStore(context: Context) {
                 triggers = prefs.getString(KEY_REACTIVE_TRIGGERS, null)?.let(TaskConfig::parseKeywords)
                     ?: defaults.reactive.triggers,
                 command = prefs.getString(KEY_REACTIVE_COMMAND, null).orEmpty(),
-                restrictToRoom = secure.restrictReactiveRoom,
                 room = secure.reactiveRoom,
                 returnBeforeSend = prefs.getBoolean(KEY_REPLY_RETURN, defaults.reactive.returnBeforeSend),
                 hours = prefs.getString(KEY_REPLY_HOURS, null)?.let(::decodeReplyHours)
@@ -112,7 +111,6 @@ class SettingsStore(context: Context) {
         secure.taskRoom = config.targetRoom
         secure.restrictTaskRoom = config.restrictToRoom
         secure.reactiveRoom = config.reactive.room
-        secure.restrictReactiveRoom = config.reactive.restrictToRoom
         prefs.edit()
             .putString(KEY_COMMANDS, encodeCommands(config.commands))
             .putInt(KEY_JITTER_MIN, config.jitterMinSec)

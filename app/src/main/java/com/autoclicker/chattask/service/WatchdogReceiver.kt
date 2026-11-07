@@ -9,6 +9,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.EventType
+import com.autoclicker.chattask.core.StopRule
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.data.SettingsStore
 import java.time.LocalDateTime
@@ -27,7 +28,8 @@ class WatchdogReceiver : BroadcastReceiver() {
         val service = AutoTaskService.instance
         service?.tickSchedule()
         val now = LocalDateTime.now()
-        val mustRun = config.activeHours.any { !it.allDay && it.isActive(now) }
+        val mustRun = config.activeHours.any { !it.allDay && it.isActive(now) } &&
+            StopRule.mayAutoStart(store.blockedUntilMs, System.currentTimeMillis())
         val hasSession = store.loadSession() != null
         if (service != null) {
             store.watchdogMisses = 0

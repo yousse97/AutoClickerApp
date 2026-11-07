@@ -68,7 +68,7 @@
     <string name="notice_not_launchable">Could not open the target app</string>
     <string name="notice_no_chat">Chat screen not found</string>
     <string name="notice_room_not_found">Channel not found in this account</string>
-    <string name="helper_reactive">Replies only in this mode, during its active hours, and only while the chat is on screen.</string>
+    <string name="helper_reactive">While running in its active hours, it watches the selected app\'s screen and notifications for your trigger phrases. It then goes to your saved channel and replies once, at least 20 seconds apart. It never replies anywhere else, and a missed trigger is not answered later.</string>
     <string name="label_triggers">Trigger phrases</string>
     <string name="helper_keywords_reactive">One per line, or separated by commas.</string>
     <string name="label_reaction_command">Reaction command</string>
@@ -264,11 +264,11 @@
     <string name="page_about">About</string>
     <string name="about_version">Version %1$s (build %2$d)</string>
     <string name="about_whats_new_title">What\'s new</string>
-    <string name="about_whats_new">• New menu with separate settings pages, All Settings, and this About page\n• New Home screen with status, warnings, and Start and Stop\n• Choose Scheduled commands or Auto reply, one at a time. Auto reply has its own Start, Stop, hours, and channel\n• Each command has its own interval and daily schedule, following the real clock\n• Returns to the selected app 5 seconds before a scheduled send\n• A Daily command without valid times stays idle until you set them\n• Redesigned floating timer with a size setting, a blue theme, and a new icon</string>
+    <string name="about_whats_new">• New menu with separate settings pages, All Settings, and this About page\n• New Home screen with status, warnings, and Start and Stop\n• Choose Scheduled commands or Auto reply, one at a time. Auto reply has its own Start, Stop, hours, and channel, and can react to notifications\n• Each command has its own interval and daily schedule, following the real clock\n• Returns to the selected app 5 seconds before a scheduled send\n• A Daily command without valid times stays idle until you set them\n• Redesigned floating timer with a size setting, a blue theme, and a new icon</string>
     <string name="about_releases">Releases</string>
     <string name="about_no_browser">No browser is available to open this page.</string>
     <string name="about_privacy_title">Privacy</string>
-    <string name="about_privacy">Settings and the event log are stored only on this device, and backups are turned off. Channel names are encrypted. The log holds times and event types, never chat text. The app has no internet permission.</string>
+    <string name="about_privacy">Settings and the event log are stored only on this device, and backups are turned off. Channel names are encrypted. The log holds times and event types, never chat text. With notification access on, only the selected app\'s notifications are read, and their text is never saved. The app has no internet permission.</string>
     <string name="about_notice_title">Unofficial app</string>
     <string name="about_notice">YOUSE TIMER is an unofficial app. It is not affiliated with or endorsed by the selected app.</string>
     <string name="mode_scheduled">Scheduled commands</string>
@@ -285,5 +285,14 @@
     <string name="section_reply_hours">Active hours</string>
     <string name="summary_reply_pick_times">Choose a From time and a different To time. No replies will be sent until then.</string>
     <string name="warning_reply_schedule">Auto reply is set to Daily without valid times, so it will not reply.</string>
-    <string name="helper_reply_return">Opens the selected app 5 seconds before the active hours begin, or when you press Start, and goes to your channel. A trigger can only be seen while the selected app is on screen. If off, replies wait until you return to it.</string>
+    <string name="helper_reply_return">Opens the selected app 5 seconds before the active hours begin, or when you press Start. A matched trigger always goes to your saved channel, even if this is off.</string>
+    <string name="permission_notification_access">Notification access</string>
+    <string name="section_notification_access">Notification triggers</string>
+    <string name="notification_access_on">Notification access is on. Screen and notification triggers both work.</string>
+    <string name="notification_access_off">Notification access is off. Screen triggers still work, but notification triggers do not.</string>
+    <string name="helper_notification_access">Only the selected app\'s notifications are read, and their text is never saved. If Android blocks the switch, allow restricted settings from App info first.</string>
+    <string name="button_notification_access">Open notification access</string>
+    <string name="guide_notification_title">6. Notification access (Auto reply)</string>
+    <string name="guide_notification_body">Find this app in the list and turn it on, so Auto reply can see triggers in the selected app\'s notifications. Without it, screen triggers still work. If Android blocks the switch, repeat step 1.</string>
+    <string name="event_trigger_handled">Auto reply: trigger handled</string>
 </resources>

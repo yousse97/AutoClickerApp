@@ -80,5 +80,6 @@ class LogActivity : AppCompatActivity() {
         EventType.APP_KILLED_SYSTEM -> R.string.event_killed_system
         EventType.APP_CRASHED -> R.string.event_crashed
         EventType.APP_STOPPED_BY_USER -> R.string.event_stopped_user
+        EventType.TRIGGER_HANDLED -> R.string.event_trigger_handled
     }
 }

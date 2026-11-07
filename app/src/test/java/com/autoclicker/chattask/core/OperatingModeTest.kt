@@ -18,7 +18,7 @@ import java.time.LocalDateTime
 
 class OperatingModeTest {
     private val commands = listOf(CommandEntry("my command", 60))
-    private val replies = ReactiveConfig(command = "my reply")
+    private val replies = ReactiveConfig(command = "my reply", room = "two")
     private val scheduled = TaskConfig(commands = commands, reactive = replies)
     private val autoReply = scheduled.copy(mode = OperatingMode.AUTO_REPLY)
     private val granted = PermissionState(accessibility = true, overlay = true, notifications = true, battery = true)
@@ -64,7 +64,7 @@ class OperatingModeTest {
         val noReply = TaskConfig(commands = commands)
         assertTrue(noReply.validate().isEmpty())
         assertEquals(
-            listOf(ConfigError.REACTIVE_NO_COMMAND),
+            listOf(ConfigError.REACTIVE_NO_COMMAND, ConfigError.REACTIVE_ROOM_REQUIRED),
             noReply.copy(mode = OperatingMode.AUTO_REPLY).validate(),
         )
     }
@@ -75,13 +75,14 @@ class OperatingModeTest {
             targetRoom = "one",
             restrictToRoom = true,
             returnBeforeSend = true,
-            reactive = ReactiveConfig(room = "two", restrictToRoom = false, returnBeforeSend = false),
+            reactive = ReactiveConfig(room = "two", returnBeforeSend = false),
         )
         assertEquals("one", config.activeRoom)
         assertTrue(config.activeRestrict && config.activeReturn)
         val reply = config.copy(mode = OperatingMode.AUTO_REPLY)
         assertEquals("two", reply.activeRoom)
-        assertFalse(reply.activeRestrict || reply.activeReturn)
+        assertFalse(reply.activeReturn)
+        assertTrue(reply.activeRestrict)
     }
 
     @Test
@@ -184,6 +185,7 @@ class OperatingModeTest {
         val config = autoReply.copy(reactive = replies.copy(hours = CommandEntry("", allDay = false)))
         val warning = homeWarnings(config, granted).single()
         assertEquals(HomeWarning.REPLY_SCHEDULE, warning)
+        assertTrue(config.validate().isEmpty())
         assertEquals(SettingsPage.AUTO_REPLY, warning.page)
         assertFalse(warning.blocksStart)
     }

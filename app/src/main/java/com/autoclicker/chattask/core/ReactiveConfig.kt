@@ -11,7 +11,7 @@ data class ReplySlot(val id: Long, val startsInMs: Long)
 data class ReactiveConfig(
     val triggers: List<String> = DEFAULT_TRIGGERS,
     val command: String = "",
-    val restrictToRoom: Boolean = false,
+    /** Replies go out only here, so this is required. */
     val room: String = "",
     /** Bring the user back 5 seconds before the active hours begin. */
     val returnBeforeSend: Boolean = true,

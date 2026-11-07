@@ -71,6 +71,7 @@ enum class HomeWarning(@StringRes val text: Int, val page: SettingsPage) {
     COMMANDS(R.string.warning_commands, SettingsPage.COMMANDS),
     SCHEDULE(R.string.warning_schedule, SettingsPage.COMMANDS),
     REPLY_SCHEDULE(R.string.warning_reply_schedule, SettingsPage.AUTO_REPLY),
+    NOTIFICATION_ACCESS(R.string.notification_access_off, SettingsPage.AUTO_REPLY),
     CHANNEL(R.string.warning_channel, SettingsPage.CHANNEL),
     AUTO_REPLY(R.string.warning_auto_reply, SettingsPage.AUTO_REPLY),
     ;
@@ -79,7 +80,7 @@ enum class HomeWarning(@StringRes val text: Int, val page: SettingsPage) {
     val blocksStart: Boolean get() = this !in OPTIONAL
 
     private companion object {
-        val OPTIONAL = setOf(NOTIFICATIONS, BATTERY, SCHEDULE, REPLY_SCHEDULE)
+        val OPTIONAL = setOf(NOTIFICATIONS, BATTERY, SCHEDULE, REPLY_SCHEDULE, NOTIFICATION_ACCESS)
     }
 }
 
@@ -96,6 +97,7 @@ data class PermissionState(
     val overlay: Boolean,
     val notifications: Boolean,
     val battery: Boolean,
+    val notificationAccess: Boolean = true,
 )
 
 fun homeWarnings(config: TaskConfig, permissions: PermissionState): List<HomeWarning> = buildList {
@@ -111,4 +113,7 @@ fun homeWarnings(config: TaskConfig, permissions: PermissionState): List<HomeWar
     }
     if (inSection(SettingsSectionKind.CHANNEL)) add(HomeWarning.CHANNEL)
     if (inSection(SettingsSectionKind.AUTO_REPLY)) add(HomeWarning.AUTO_REPLY)
+    if (config.mode == OperatingMode.AUTO_REPLY && !permissions.notificationAccess) {
+        add(HomeWarning.NOTIFICATION_ACCESS)
+    }
 }

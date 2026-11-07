@@ -84,19 +84,38 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:text="@string/section_notification_access"
+        android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+    <TextView
+        android:id="@+id/textNotificationAccess"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/helper_notification_access"
+        android:textAppearance="?attr/textAppearanceBodySmall" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonNotificationAccess"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_notification_access" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:text="@string/section_reply_hours"
         android:textAppearance="?attr/textAppearanceTitleMedium" />
 
     <include
         android:id="@+id/hours"
         layout="@layout/hours_picker" />
-
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkRestrictReactive"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/label_restrict_room" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutReactiveRoom"

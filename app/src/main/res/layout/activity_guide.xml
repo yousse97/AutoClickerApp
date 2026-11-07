@@ -101,6 +101,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/guide_open_app_info" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideTitle"
+            android:text="@string/guide_notification_title" />
+
+        <TextView
+            style="@style/Widget.AutoClicker.GuideBody"
+            android:text="@string/guide_notification_body" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonNotificationAccess"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_open_settings" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
 </LinearLayout>

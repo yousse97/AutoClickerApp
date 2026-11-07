@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityManager
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -28,6 +29,7 @@ import com.autoclicker.chattask.core.WolfScreen
 import com.autoclicker.chattask.databinding.RowPermissionBinding
 import com.autoclicker.chattask.databinding.SectionHelpBinding
 import com.autoclicker.chattask.service.AutoTaskService
+import com.autoclicker.chattask.service.ReplyNotificationListener
 import com.autoclicker.chattask.service.ScheduleKeeper
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
@@ -37,7 +39,15 @@ fun readPermissions(context: Context) = PermissionState(
     notifications = hasNotificationPermission(context),
     battery = context.getSystemService(PowerManager::class.java)
         .isIgnoringBatteryOptimizations(context.packageName),
+    notificationAccess = ReplyNotificationListener.isEnabled(context),
 )
+
+/** Device makers can remove this screen, so a missing one must not crash the page. */
+fun openNotificationAccess(context: Context) {
+    runCatching { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }.onFailure {
+        Toast.makeText(context, R.string.guide_screen_unavailable, Toast.LENGTH_LONG).show()
+    }
+}
 
 private fun isAccessibilityEnabled(context: Context): Boolean {
     val expected = ComponentName(context, AutoTaskService::class.java)
@@ -70,6 +80,7 @@ class HelpSection(
         binding.rowOverlay.title.setText(R.string.permission_overlay)
         binding.rowNotifications.title.setText(R.string.permission_notifications)
         binding.rowBattery.title.setText(R.string.permission_battery)
+        binding.rowNotificationAccess.title.setText(R.string.permission_notification_access)
         binding.rowExactAlarm.title.setText(R.string.permission_exact_alarm)
         binding.rowAccessibility.action.setOnClickListener { showAccessibilityDisclosure() }
         binding.rowOverlay.action.setOnClickListener {
@@ -81,6 +92,7 @@ class HelpSection(
             }
         }
         binding.rowBattery.action.setOnClickListener { requestBatteryExemption() }
+        binding.rowNotificationAccess.action.setOnClickListener { openNotificationAccess(activity) }
         binding.rowExactAlarm.action.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 open(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, packageUri()))
@@ -100,6 +112,7 @@ class HelpSection(
         showPermission(binding.rowOverlay, state.overlay)
         showPermission(binding.rowNotifications, state.notifications)
         showPermission(binding.rowBattery, state.battery)
+        showPermission(binding.rowNotificationAccess, state.notificationAccess)
         val exact = ScheduleKeeper.canUseExactAlarms(activity)
         binding.rowExactAlarm.root.visibility = if (exact) View.GONE else View.VISIBLE
         showPermission(binding.rowExactAlarm, exact)

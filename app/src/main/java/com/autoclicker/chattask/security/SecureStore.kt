@@ -32,10 +32,6 @@ class SecureStore(context: Context) {
         get() = prefs?.getBoolean(KEY_RESTRICT_TASK, false) == true
         set(value) = putBoolean(KEY_RESTRICT_TASK, value)
 
-    var restrictReactiveRoom: Boolean
-        get() = prefs?.getBoolean(KEY_RESTRICT_REACTIVE, false) == true
-        set(value) = putBoolean(KEY_RESTRICT_REACTIVE, value)
-
     private fun putString(key: String, value: String) {
         prefs?.edit()?.putString(key, value)?.apply()
     }
@@ -58,6 +54,5 @@ class SecureStore(context: Context) {
         const val KEY_TASK_ROOM = "task_room"
         const val KEY_REACTIVE_ROOM = "reactive_room"
         const val KEY_RESTRICT_TASK = "restrict_task"
-        const val KEY_RESTRICT_REACTIVE = "restrict_reactive"
     }
 }

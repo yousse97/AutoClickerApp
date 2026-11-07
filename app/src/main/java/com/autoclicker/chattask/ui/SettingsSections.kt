@@ -18,6 +18,7 @@ import com.autoclicker.chattask.databinding.SectionCommandsBinding
 import com.autoclicker.chattask.databinding.SectionTimerBinding
 import com.autoclicker.chattask.service.AutoTaskService
 import com.autoclicker.chattask.service.Notices
+import com.autoclicker.chattask.service.ReplyNotificationListener
 import com.autoclicker.chattask.service.TaskBus
 import com.autoclicker.chattask.service.TaskPhase
 import com.autoclicker.chattask.service.TaskStatus
@@ -131,9 +132,16 @@ class AutoReplySection(
             }
         }
         binding.buttonReplyStop.setOnClickListener { AutoTaskService.instance?.stopSession() }
+        binding.buttonNotificationAccess.setOnClickListener { openNotificationAccess(view.context) }
     }
 
-    override fun onResume() = modeChoice.show()
+    override fun onResume() {
+        modeChoice.show()
+        val allowed = ReplyNotificationListener.isEnabled(view.context)
+        binding.textNotificationAccess.setText(
+            if (allowed) R.string.notification_access_on else R.string.notification_access_off,
+        )
+    }
 
     override fun onStatus(status: TaskStatus) {
         val context = view.context
@@ -151,7 +159,6 @@ class AutoReplySection(
     override fun show(config: TaskConfig) = with(binding) {
         inputTriggers.setText(config.reactive.triggers.joinToString("\n"))
         inputReaction.setText(config.reactive.command)
-        checkRestrictReactive.isChecked = config.reactive.restrictToRoom
         inputReactiveRoom.setText(config.reactive.room)
         switchReplyReturn.isChecked = config.reactive.returnBeforeSend
         replyHours.show(config.reactive.hours.allDay, config.reactive.hours.startMinute, config.reactive.hours.endMinute)
@@ -164,7 +171,6 @@ class AutoReplySection(
             reactive = ReactiveConfig(
                 triggers = TaskConfig.parseKeywords(inputTriggers.textValue()),
                 command = inputReaction.textValue().trim(),
-                restrictToRoom = checkRestrictReactive.isChecked,
                 room = inputReactiveRoom.textValue().trim(),
                 returnBeforeSend = switchReplyReturn.isChecked,
                 hours = readHours(),

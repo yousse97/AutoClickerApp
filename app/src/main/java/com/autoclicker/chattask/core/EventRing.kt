@@ -43,6 +43,7 @@ enum class EventType(val isError: Boolean = false) {
     APP_KILLED_SYSTEM(isError = true),
     APP_CRASHED(isError = true),
     APP_STOPPED_BY_USER(isError = true),
+    TRIGGER_HANDLED,
 }
 
 private val ERROR_STOPS = setOf(

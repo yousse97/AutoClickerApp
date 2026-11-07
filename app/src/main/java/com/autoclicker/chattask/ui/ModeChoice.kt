@@ -4,14 +4,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.OperatingMode
+import com.autoclicker.chattask.core.StopRule
 import com.autoclicker.chattask.data.SettingsStore
 import com.autoclicker.chattask.databinding.ModeChoiceBinding
 import com.autoclicker.chattask.service.AutoTaskService
 import com.autoclicker.chattask.service.OverlayService
-import com.autoclicker.chattask.service.ScheduleKeeper
 import com.autoclicker.chattask.service.TaskBus
 import com.autoclicker.chattask.service.canSwitchMode
-import java.time.LocalDateTime
 
 /** The one place the mode changes. A running session has to be stopped first. */
 class ModeChoice(
@@ -42,8 +41,8 @@ class ModeChoice(
             return show()
         }
         store.operatingMode = mode
-        // Choosing a mode starts nothing, even inside its hours: that takes Start or the next start.
-        store.blockedUntilMs = ScheduleKeeper.blockUntil(store.loadConfig(), LocalDateTime.now())
+        // Choosing a mode starts nothing, even inside its hours: that takes Start.
+        store.blockedUntilMs = StopRule.UNTIL_START
         AutoTaskService.instance?.reloadSettings()
         onChanged()
     }
