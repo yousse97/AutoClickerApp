@@ -20,9 +20,12 @@
                 android:id="@+id/topBar"
                 layout="@layout/top_bar" />
 
-            <include
-                android:id="@+id/modeChoice"
-                layout="@layout/mode_choice" />
+            <TextView
+                android:id="@+id/textMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                     <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardStatus"
@@ -139,6 +142,27 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/button_start" />
+
+            <LinearLayout
+                android:id="@+id/quickContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/textQuickState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textAppearance="?attr/textAppearanceBodySmall" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonQuickSave"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/button_save" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

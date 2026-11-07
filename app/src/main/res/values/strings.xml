@@ -275,13 +275,12 @@
     <string name="mode_auto_reply">Auto reply</string>
     <string name="mode_scheduled_short">Scheduled</string>
     <string name="mode_auto_reply_short">Auto reply</string>
-    <string name="status_mode">Mode: %1$s</string>
     <string name="status_replies">Replies this session: %1$d</string>
     <string name="status_reply_hours">Active hours: %1$s</string>
     <string name="status_listening_reason">Watching for your trigger phrases.</string>
     <string name="overlay_mode_state">%1$s · %2$s</string>
     <string name="toast_stop_before_mode">Stop the session before switching modes.</string>
-    <string name="toast_choose_auto_reply">Choose Auto reply above first.</string>
+    <string name="toast_choose_auto_reply">Choose Auto reply in the menu first.</string>
     <string name="section_reply_hours">Active hours</string>
     <string name="summary_reply_pick_times">Choose a From time and a different To time. No replies will be sent until then.</string>
     <string name="warning_reply_schedule">Auto reply is set to Daily without valid times, so it will not reply.</string>
@@ -295,4 +294,9 @@
     <string name="guide_notification_title">6. Notification access (Auto reply)</string>
     <string name="guide_notification_body">Find this app in the list and turn it on, so Auto reply can see triggers in the selected app\'s notifications. Without it, screen triggers still work. If Android blocks the switch, repeat step 1.</string>
     <string name="event_trigger_handled">Auto reply: trigger handled</string>
+    <string name="menu_mode">Mode</string>
+    <string name="quick_title">Quick settings</string>
+    <string name="quick_saved">All changes are saved.</string>
+    <string name="quick_unsaved">Changes are not saved yet.</string>
+    <string name="quick_save_first">Save your changes first.</string>
 </resources>

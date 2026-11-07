@@ -5,6 +5,7 @@ import com.autoclicker.chattask.core.CommandEntry
 import com.autoclicker.chattask.core.DailySchedule
 import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.ReactiveConfig
+import com.autoclicker.chattask.core.StopRule
 import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.security.SecureStore
@@ -50,9 +51,9 @@ class SettingsStore(context: Context) {
         get() = prefs.getInt(KEY_OVERLAY_Y, NO_POSITION)
         set(value) = prefs.edit().putInt(KEY_OVERLAY_Y, value).apply()
 
-    /** A stop that needs a manual restart holds until this time. */
+    /** Nothing starts by itself until this time. Only Start clears it. */
     var blockedUntilMs: Long
-        get() = prefs.getLong(KEY_BLOCKED_UNTIL, 0)
+        get() = prefs.getLong(KEY_BLOCKED_UNTIL, StopRule.UNTIL_START)
         set(value) = prefs.edit().putLong(KEY_BLOCKED_UNTIL, value).apply()
 
     var watchdogMisses: Int

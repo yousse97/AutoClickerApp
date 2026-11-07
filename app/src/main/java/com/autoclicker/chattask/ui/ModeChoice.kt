@@ -6,45 +6,24 @@ import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.OperatingMode
 import com.autoclicker.chattask.core.StopRule
 import com.autoclicker.chattask.data.SettingsStore
-import com.autoclicker.chattask.databinding.ModeChoiceBinding
 import com.autoclicker.chattask.service.AutoTaskService
 import com.autoclicker.chattask.service.OverlayService
 import com.autoclicker.chattask.service.TaskBus
 import com.autoclicker.chattask.service.canSwitchMode
 
 /** The one place the mode changes. A running session has to be stopped first. */
-class ModeChoice(
-    private val binding: ModeChoiceBinding,
-    private val store: SettingsStore,
-    private val onChanged: () -> Unit,
-) {
-    private var showing = false
-
-    init {
-        binding.root.addOnButtonCheckedListener { _, id, checked ->
-            if (checked && !showing) select(if (id == binding.buttonModeAutoReply.id) OperatingMode.AUTO_REPLY else OperatingMode.SCHEDULED)
-        }
-        show()
-    }
-
-    fun show() {
-        showing = true
-        val auto = store.operatingMode == OperatingMode.AUTO_REPLY
-        binding.root.check(if (auto) binding.buttonModeAutoReply.id else binding.buttonModeScheduled.id)
-        showing = false
-    }
-
-    private fun select(mode: OperatingMode) {
-        if (mode == store.operatingMode) return
+object ModeChoice {
+    /** Returns true if [mode] is now selected. Choosing one starts nothing: that takes Start. */
+    fun select(activity: AppCompatActivity, store: SettingsStore, mode: OperatingMode): Boolean {
+        if (mode == store.operatingMode) return true
         if (!canSwitchMode(TaskBus.status.value.phase, store.loadSession() != null)) {
-            Toast.makeText(binding.root.context, R.string.toast_stop_before_mode, Toast.LENGTH_LONG).show()
-            return show()
+            Toast.makeText(activity, R.string.toast_stop_before_mode, Toast.LENGTH_LONG).show()
+            return false
         }
         store.operatingMode = mode
-        // Choosing a mode starts nothing, even inside its hours: that takes Start.
         store.blockedUntilMs = StopRule.UNTIL_START
         AutoTaskService.instance?.reloadSettings()
-        onChanged()
+        return true
     }
 }
 

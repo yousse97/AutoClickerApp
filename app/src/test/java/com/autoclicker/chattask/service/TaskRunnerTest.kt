@@ -423,7 +423,7 @@ class TaskRunnerTest {
     }
 
     @Test
-    fun `clearing the times stops sends until a schedule is set again`() = runTest {
+    fun `clearing the times stops sends, and setting them again waits one interval`() = runTest {
         val sent = ArrayList<Int>()
         val runner = indexRunner(backgroundScope) { sent += it; CycleResult.SENT }
         val daily = CommandEntry("a", 60, allDay = false, startMinute = 11 * 60, endMinute = 13 * 60)
@@ -439,7 +439,10 @@ class TaskRunnerTest {
         assertEquals(1, sent.size)
 
         replan(runner, listOf(cleared), listOf(cleared.copy(allDay = true)))
-        advanceTimeBy(4_000)
+        advanceTimeBy(59_000)
+        runCurrent()
+        assertEquals(1, sent.size)
+        advanceTimeBy(2_000)
         runCurrent()
         assertEquals(2, sent.size)
     }

@@ -9,40 +9,6 @@ class ReactiveDetectorTest {
     private val own = listOf(CommandEntry("my command", intervalSec = 610))
 
     @Test
-    fun `old messages set the baseline and do not fire`() {
-        val detector = ReactiveDetector()
-        assertFalse(detector.observe(3, 0))
-        assertFalse(detector.observe(3, 1_000))
-    }
-
-    @Test
-    fun `a new message fires once and a scrolled away one does not`() {
-        val detector = ReactiveDetector()
-        detector.observe(1, 0)
-        assertTrue(detector.observe(2, 20_000))
-        assertFalse(detector.observe(2, 21_000))
-        assertFalse(detector.observe(1, 40_000))
-        assertTrue(detector.observe(2, 60_000))
-    }
-
-    @Test
-    fun `the cooldown absorbs a second match right after the first`() {
-        val detector = ReactiveDetector(cooldownMs = 10_000)
-        detector.observe(0, 0)
-        assertTrue(detector.observe(1, 1_000))
-        assertFalse(detector.observe(2, 2_000))
-        assertTrue(detector.observe(3, 12_000))
-    }
-
-    @Test
-    fun `entering another chat starts a fresh baseline`() {
-        val detector = ReactiveDetector()
-        detector.observe(0, 0)
-        detector.forgetBaseline()
-        assertFalse(detector.observe(4, 60_000))
-    }
-
-    @Test
     fun `message box is recognised by editable flag, class or hint`() {
         assertTrue(InputMatcher.isMessageBox(null, editable = true, null, null))
         assertTrue(InputMatcher.isMessageBox("android.widget.EditText", false, null, null))

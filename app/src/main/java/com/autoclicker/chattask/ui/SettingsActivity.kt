@@ -199,19 +199,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun stateKey(group: Group) = "expanded_${group.kind.name}"
 
-    private fun messageFor(error: ConfigError): Int = when (error) {
-        ConfigError.EMPTY_COMMAND -> R.string.error_empty_command
-        ConfigError.COMMAND_TOO_LONG -> R.string.error_command_too_long
-        ConfigError.TOO_MANY_COMMANDS -> R.string.error_too_many_commands
-        ConfigError.INTERVAL_TOO_SHORT -> R.string.error_interval_too_short
-        ConfigError.JITTER_RANGE -> R.string.error_jitter_range
-        ConfigError.JITTER_TOO_LARGE -> R.string.error_jitter_too_large
-        ConfigError.ROOM_TOO_LONG -> R.string.error_room_too_long
-        ConfigError.ROOM_REQUIRED, ConfigError.REACTIVE_ROOM_REQUIRED -> R.string.error_room_required
-        ConfigError.REACTIVE_NO_TRIGGER -> R.string.error_no_trigger
-        ConfigError.REACTIVE_NO_COMMAND -> R.string.error_no_reaction
-    }
-
     companion object {
         private const val EXTRA_PAGE = "page"
         private const val EXTRA_SHOW_ERRORS = "show_errors"

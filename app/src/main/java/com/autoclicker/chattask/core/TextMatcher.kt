@@ -1,9 +1,15 @@
 package com.autoclicker.chattask.core
 
-/** Makes UI labels comparable across Arabic spelling variants and invisible formatting. */
+/**
+ * Makes UI labels comparable across Arabic spelling variants and invisible formatting. The emoji
+ * variation selectors go too, as the same emoji can arrive with or without one. A joiner between
+ * emoji stays, because it builds a different emoji. Between letters it is only formatting.
+ */
 object TextNormalizer {
-    private val INVISIBLE =
-        Regex("[\\u0640\\u064B-\\u065F\\u0670\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069\\uFEFF]")
+    private val INVISIBLE = Regex(
+        "[\\u0640\\u064B-\\u065F\\u0670\\u200B\\u200C\\u200E\\u200F\\u202A-\\u202E\\u2066-\\u2069\\uFE0E\\uFE0F\\uFEFF]" +
+            "|(?<=\\p{L})\\u200D|\\u200D(?=\\p{L})",
+    )
     private val SPACES = Regex("\\s+")
 
     fun normalize(text: CharSequence): String {

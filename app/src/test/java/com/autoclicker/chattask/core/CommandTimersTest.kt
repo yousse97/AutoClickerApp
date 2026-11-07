@@ -176,7 +176,10 @@ class CommandTimersTest {
         val offsets = listOf(offsetA, offsetB)
         assertEquals(listOf(offsetB, offsetA), CommandTimers.carryOffsets(old, offsets, listOf(b, a)))
         assertEquals(offsets, CommandTimers.carryOffsets(old, offsets, listOf(a.copy(text = "edited"), b)))
-        assertEquals(listOf(offsetA, offsetB, null), CommandTimers.carryOffsets(old, offsets, old + CommandEntry("c", 610)))
+        assertEquals(
+            listOf(offsetA, offsetB, TimerOffset(610_000, 610_000, false)),
+            CommandTimers.carryOffsets(old, offsets, old + CommandEntry("c", 610)),
+        )
     }
 
     @Test

@@ -170,21 +170,16 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     }
 
     /** A person pressing Start clears a stop, but the schedule still decides the hours. */
-    private fun startManually() {
-        store.blockedUntilMs = 0
-        startNewSession(scheduled = false)
-    }
+    private fun startManually() = startNewSession(scheduled = false)
 
     /** Home can start from anywhere: WOLF is opened 5 seconds before the first send is due. */
     fun startFromHome() {
         if (runner.phase != TaskPhase.IDLE) return
-        store.blockedUntilMs = 0
         startNewSession(scheduled = true)
     }
 
     fun pauseSession() = runner.pause()
 
-    /** Stays stopped until Start is pressed, whatever the schedule says. */
     fun stopSession() {
         if (!::runner.isInitialized) return
         if (session != null) EventLog.add(this, EventType.SESSION_STOPPED)
@@ -212,6 +207,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         val inWolf = NodeTools.activePackage(this) == WolfUi.PACKAGE
         if (!inWolf && !scheduled) return showNotice(R.string.notice_open_chat)
 
+        store.blockedUntilMs = 0
         activate(Session(config))
         TaskBus.update {
             it.copy(popups = 0, reactions = 0, notice = 0, idleUntilMs = 0, stoppedByError = false)
@@ -343,7 +339,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         runner.stop()
         endSession(notice = message)
         TaskBus.update { it.copy(stoppedByError = true) }
-        scheduleDriver.blockAfterStop()
+        store.blockedUntilMs = StopRule.UNTIL_START
         EventLog.add(this, type)
         Alerts.post(this, message, offerRetry)
     }

@@ -272,13 +272,12 @@
     <string name="mode_auto_reply">الرد التلقائي</string>
     <string name="mode_scheduled_short">مجدول</string>
     <string name="mode_auto_reply_short">رد تلقائي</string>
-    <string name="status_mode">الوضع: %1$s</string>
     <string name="status_replies">الردود في هذه الجلسة: %1$d</string>
     <string name="status_reply_hours">ساعات العمل: %1$s</string>
     <string name="status_listening_reason">في انتظار العبارات التي حددتها.</string>
     <string name="overlay_mode_state">%1$s · %2$s</string>
     <string name="toast_stop_before_mode">أوقف الجلسة قبل تبديل الوضع.</string>
-    <string name="toast_choose_auto_reply">اختر الرد التلقائي في الأعلى أولًا.</string>
+    <string name="toast_choose_auto_reply">اختر الرد التلقائي من القائمة أولًا.</string>
     <string name="section_reply_hours">ساعات العمل</string>
     <string name="summary_reply_pick_times">اختر وقت البداية ووقت نهاية مختلفًا. لن تُرسل أي ردود حتى ذلك الحين.</string>
     <string name="warning_reply_schedule">الرد التلقائي مضبوط على يوميًا بدون أوقات صحيحة، لذلك لن يرد.</string>
@@ -292,4 +291,9 @@
     <string name="guide_notification_title">6. الوصول إلى الإشعارات (الرد التلقائي)</string>
     <string name="guide_notification_body">ابحث عن هذا التطبيق في القائمة وفعّله، حتى يرى الرد التلقائي العبارات في إشعارات البرنامج المحدد. بدون ذلك، يظل الرد من الشاشة يعمل. إذا منع أندرويد التفعيل، أعد الخطوة 1.</string>
     <string name="event_trigger_handled">الرد التلقائي: تمت معالجة العبارة</string>
+    <string name="menu_mode">الوضع</string>
+    <string name="quick_title">إعدادات سريعة</string>
+    <string name="quick_saved">تم حفظ كل التغييرات.</string>
+    <string name="quick_unsaved">لم تُحفظ التغييرات بعد.</string>
+    <string name="quick_save_first">احفظ تغييراتك أولًا.</string>
 </resources>

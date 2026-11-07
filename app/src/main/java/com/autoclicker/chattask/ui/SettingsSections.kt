@@ -51,10 +51,10 @@ interface SettingsSection {
     fun restoreState(state: Bundle) = Unit
 }
 
-private fun List<ConfigError>.messageOf(message: (ConfigError) -> String, vararg matching: ConfigError) =
+fun List<ConfigError>.messageOf(message: (ConfigError) -> String, vararg matching: ConfigError) =
     firstOrNull { it in matching }?.let(message)
 
-private fun android.widget.EditText.textValue() = text?.toString().orEmpty()
+fun android.widget.EditText.textValue() = text?.toString().orEmpty()
 
 private fun android.widget.EditText.intValue(): Int = textValue().toIntOrNull() ?: 0
 
@@ -64,7 +64,7 @@ class CommandsSection(
     private val store: SettingsStore,
 ) : SettingsSection {
     private val binding = SectionCommandsBinding.inflate(inflater, parent, false)
-    private val editor = CommandListEditor(binding.commandList, binding.buttonAddCommand, ::showPrompt)
+    private val editor = CommandListEditor(binding.commandList, binding.buttonAddCommand, onChanged = ::showPrompt)
     override val view: View get() = binding.root
 
     override fun show(config: TaskConfig) {
@@ -120,7 +120,6 @@ class AutoReplySection(
 ) : SettingsSection {
     private val binding = SectionAutoReplyBinding.inflate(inflater, parent, false)
     private val replyHours = HoursEditor(binding.hours, R.string.summary_reply_pick_times) {}
-    private val modeChoice = ModeChoice(binding.modeChoice, store) { onStatus(TaskBus.status.value) }
     override val view: View get() = binding.root
 
     init {
@@ -136,7 +135,7 @@ class AutoReplySection(
     }
 
     override fun onResume() {
-        modeChoice.show()
+        onStatus(TaskBus.status.value)
         val allowed = ReplyNotificationListener.isEnabled(view.context)
         binding.textNotificationAccess.setText(
             if (allowed) R.string.notification_access_on else R.string.notification_access_off,

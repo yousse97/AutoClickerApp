@@ -34,10 +34,9 @@ class StatusCardView(private val context: Context, private val binding: Activity
         binding.textStatusReason.setTextColor(text)
         binding.textStatusTitle.setText(titleOf(state))
         binding.textStatusReason.text = reasonOf(state, status, config.mode)
-        val mode = context.getString(R.string.status_mode, context.getString(config.mode.title))
         binding.textStatusFacts.text = when (config.mode) {
-            OperatingMode.SCHEDULED -> listOf(mode) + commandFacts(status, config.commands, events)
-            OperatingMode.AUTO_REPLY -> listOf(mode) + replyFacts(status, config)
+            OperatingMode.SCHEDULED -> commandFacts(status, config.commands, events)
+            OperatingMode.AUTO_REPLY -> replyFacts(status, config)
         }.joinToString("\n")
     }
 

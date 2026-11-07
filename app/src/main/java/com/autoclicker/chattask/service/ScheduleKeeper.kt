@@ -24,15 +24,6 @@ object ScheduleKeeper {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
 
-    /**
-     * Until when a stop holds off the schedule. The next start may begin a new session, but with
-     * 24 hours active there is no such start, so it waits for the user.
-     */
-    fun blockUntil(config: TaskConfig, now: LocalDateTime): Long = when {
-        config.activeHours.any { it.allDay } -> Long.MAX_VALUE
-        else -> nextStart(config, now)?.let(::toEpochMs) ?: 0
-    }
-
     /** The earliest coming start among the entries that have hours. */
     fun nextStart(config: TaskConfig, now: LocalDateTime): LocalDateTime? = config.activeHours
         .filter { !it.allDay && it.window.isComplete }

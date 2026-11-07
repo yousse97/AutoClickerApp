@@ -3,8 +3,9 @@ package com.autoclicker.chattask.core
 enum class StoppedAction { NONE, SHOW_IDLE, START }
 
 /**
- * What happens with no session running. Pressing Stop holds until Start is pressed. A running
- * session never comes through here: it stays up through idle hours and resumes by itself.
+ * What happens with no session running. Any stop, by a person or by a failure, holds until Start
+ * is pressed, as does a fresh install. A running session never comes through here: it stays up
+ * through idle hours and resumes by itself.
  */
 object StopRule {
     const val UNTIL_START = Long.MAX_VALUE

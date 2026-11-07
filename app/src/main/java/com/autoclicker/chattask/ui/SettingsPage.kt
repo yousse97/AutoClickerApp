@@ -84,6 +84,41 @@ enum class HomeWarning(@StringRes val text: Int, val page: SettingsPage) {
     }
 }
 
+/** The settings Home shows under Start. Only the selected mode's ever appear. */
+enum class QuickForm {
+    COMMANDS,
+    AUTO_REPLY,
+    ;
+
+    companion object {
+        fun of(mode: OperatingMode) = if (mode == OperatingMode.AUTO_REPLY) AUTO_REPLY else COMMANDS
+    }
+}
+
+@IdRes
+fun menuItemOf(mode: OperatingMode): Int =
+    if (mode == OperatingMode.AUTO_REPLY) R.id.menuModeAutoReply else R.id.menuModeScheduled
+
+fun modeOfMenuItem(@IdRes item: Int): OperatingMode? = when (item) {
+    R.id.menuModeScheduled -> OperatingMode.SCHEDULED
+    R.id.menuModeAutoReply -> OperatingMode.AUTO_REPLY
+    else -> null
+}
+
+@StringRes
+fun messageFor(error: ConfigError): Int = when (error) {
+    ConfigError.EMPTY_COMMAND -> R.string.error_empty_command
+    ConfigError.COMMAND_TOO_LONG -> R.string.error_command_too_long
+    ConfigError.TOO_MANY_COMMANDS -> R.string.error_too_many_commands
+    ConfigError.INTERVAL_TOO_SHORT -> R.string.error_interval_too_short
+    ConfigError.JITTER_RANGE -> R.string.error_jitter_range
+    ConfigError.JITTER_TOO_LARGE -> R.string.error_jitter_too_large
+    ConfigError.ROOM_TOO_LONG -> R.string.error_room_too_long
+    ConfigError.ROOM_REQUIRED, ConfigError.REACTIVE_ROOM_REQUIRED -> R.string.error_room_required
+    ConfigError.REACTIVE_NO_TRIGGER -> R.string.error_no_trigger
+    ConfigError.REACTIVE_NO_COMMAND -> R.string.error_no_reaction
+}
+
 @get:StringRes
 val OperatingMode.title: Int
     get() = if (this == OperatingMode.AUTO_REPLY) R.string.mode_auto_reply else R.string.mode_scheduled

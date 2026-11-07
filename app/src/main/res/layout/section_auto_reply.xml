@@ -5,10 +5,6 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <include
-        android:id="@+id/modeChoice"
-        layout="@layout/mode_choice" />
-
     <TextView
         android:id="@+id/textReplyStatus"
         android:layout_width="match_parent"

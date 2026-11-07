@@ -15,6 +15,7 @@ import com.autoclicker.chattask.databinding.RowCommandBinding
 class CommandListEditor(
     private val list: LinearLayout,
     private val addButton: View,
+    private val showHours: Boolean = true,
     private val onChanged: () -> Unit,
 ) {
     private class Row(val binding: RowCommandBinding, val hours: HoursEditor)
@@ -55,6 +56,7 @@ class CommandListEditor(
         val binding = RowCommandBinding.inflate(LayoutInflater.from(list.context), list, false)
         val hours = HoursEditor(binding.hours, R.string.summary_pick_times) { refresh() }
         val row = Row(binding, hours)
+        binding.hours.root.visibility = if (showHours) View.VISIBLE else View.GONE
         binding.inputText.setText(command.text)
         if (command.intervalSec > 0) {
             binding.inputMinutes.setText((command.intervalSec / 60).toString())

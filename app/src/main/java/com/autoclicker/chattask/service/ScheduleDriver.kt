@@ -31,11 +31,6 @@ class ScheduleDriver(
         overlayDismissed = true
     }
 
-    /** After a stop for a failure. A person pressing Stop holds until Start instead. */
-    fun blockAfterStop() {
-        store.blockedUntilMs = ScheduleKeeper.blockUntil(config, LocalDateTime.now())
-    }
-
     /** Called each second while nothing is running. */
     fun tickStopped() {
         if (hasSession()) return

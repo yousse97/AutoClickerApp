@@ -136,13 +136,13 @@ class CommandTimers(
 
         /**
          * Where each edited command picks up. A command keeps the timer of the same text, or else
-         * of its row, so editing never sends early. Only a new row starts fresh.
+         * of its row. A new row waits one interval, so pressing Save never sends anything.
          */
         fun carryOffsets(
             old: List<CommandEntry>,
             offsets: List<TimerOffset?>,
             new: List<CommandEntry>,
-        ): List<TimerOffset?> {
+        ): List<TimerOffset> {
             val free = old.indices.toMutableSet()
             val source = arrayOfNulls<Int>(new.size)
             new.forEachIndexed { index, command ->
@@ -155,9 +155,9 @@ class CommandTimers(
                 free.remove(it)
             }
             return new.mapIndexed { index, command ->
-                source[index]?.let(offsets::getOrNull)?.let {
-                    it.copy(nextInMs = minOf(it.nextInMs, command.intervalSec * 1000L))
-                }
+                val intervalMs = command.intervalSec * 1000L
+                source[index]?.let(offsets::getOrNull)?.let { it.copy(nextInMs = minOf(it.nextInMs, intervalMs)) }
+                    ?: TimerOffset(intervalMs, intervalMs, false)
             }
         }
 

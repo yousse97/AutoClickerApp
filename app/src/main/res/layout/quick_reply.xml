@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/quick_title"
+        android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutTriggers"
+        style="@style/Widget.AutoClicker.Field"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/label_triggers">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputTriggers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            android:textDirection="anyRtl" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutReaction"
+        style="@style/Widget.AutoClicker.Field"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/label_reaction_command">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputReaction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textDirection="anyRtl" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutRoom"
+        style="@style/Widget.AutoClicker.Field"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/label_room">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputRoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textDirection="anyRtl" />
+    </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

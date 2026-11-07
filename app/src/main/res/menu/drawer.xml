@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="@string/menu_mode">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/menuModeScheduled" android:title="@string/mode_scheduled" />
+                <item android:id="@+id/menuModeAutoReply" android:title="@string/mode_auto_reply" />
+            </group>
+        </menu>
+    </item>
     <item android:id="@+id/menuCommands" android:title="@string/page_commands" />
     <item android:id="@+id/menuAutoReply" android:title="@string/page_auto_reply" />
     <item android:id="@+id/menuChannel" android:title="@string/page_channel" />

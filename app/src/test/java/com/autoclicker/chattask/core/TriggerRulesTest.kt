@@ -169,9 +169,10 @@ class TriggerRulesTest {
     }
 
     @Test
-    fun `a stop for a failure still waits only for the next start`() {
-        assertEquals(StoppedAction.SHOW_IDLE, StopRule.whenStopped(true, inHours = true, blockedUntilMs = 10, nowMs = 5))
-        assertEquals(StoppedAction.START, StopRule.whenStopped(true, inHours = true, blockedUntilMs = 10, nowMs = 10))
+    fun `a failure stop holds until Start, like pressing Stop`() {
+        val heldAfterFailure = StopRule.UNTIL_START
+        assertEquals(StoppedAction.NONE, StopRule.whenStopped(true, inHours = true, heldAfterFailure, Long.MAX_VALUE - 1))
+        assertEquals(StoppedAction.NONE, StopRule.whenStopped(false, inHours = false, heldAfterFailure, 0))
     }
 
     @Test

@@ -2,12 +2,14 @@ package com.autoclicker.chattask.service
 
 import android.accessibilityservice.AccessibilityService
 import android.os.SystemClock
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import com.autoclicker.chattask.core.ChatView
 import com.autoclicker.chattask.core.EventType
+import com.autoclicker.chattask.core.NewMessageDetector
 import com.autoclicker.chattask.core.NotificationAge
 import com.autoclicker.chattask.core.PopupTrigger
 import com.autoclicker.chattask.core.ReactiveConfig
-import com.autoclicker.chattask.core.ReactiveDetector
 import com.autoclicker.chattask.core.ReplyGate
 import com.autoclicker.chattask.core.TextNormalizer
 import com.autoclicker.chattask.core.TriggerMatcher
@@ -43,10 +45,10 @@ class ReactiveEngine(
 
     @Volatile private var params: Params? = null
     private val signal = Channel<Unit>(Channel.CONFLATED)
-    private val detector = ReactiveDetector()
+    private val detector = NewMessageDetector()
     private val popupTrigger = PopupTrigger()
     private val gate = ReplyGate()
-    private var lastPlace: String? = null
+    private var lastScrollState: Boolean? = null
     @Volatile private var pendingReply = false
     @Volatile private var startedAtMs = 0L
 
@@ -69,7 +71,7 @@ class ReactiveEngine(
 
     /** Pass null outside Auto reply mode, which leaves nothing able to reply. */
     fun configure(target: String, config: ReactiveConfig?, commands: List<String>) {
-        detector.forgetBaseline()
+        detector.forget()
         startedAtMs = System.currentTimeMillis()
         val triggers = config?.triggers?.distinctBy(TextNormalizer::normalize).orEmpty()
         params = config?.takeIf { triggers.isNotEmpty() && it.command.isNotBlank() && it.room.isNotBlank() }
@@ -107,30 +109,59 @@ class ReactiveEngine(
         if (!active.config.isActive(LocalDateTime.now())) {
             if (pendingReply) gate.cancel()
             pendingReply = false
-            return detector.forgetBaseline()
+            return detector.forget()
         }
         if (!pendingReply) watchScreen(active)
         if (pendingReply) answer(active)
     }
 
     private fun watchScreen(active: Params) {
-        val screen = navigator.readScreen()
-        // Each screen has its own history, so only a rise on the same screen is news.
-        val place = "${screen.title}|${screen.hasInput}"
-        if (place != lastPlace) detector.forgetBaseline()
-        lastPlace = place
+        val now = SystemClock.elapsedRealtime()
         val matches = findMatches(active)
         val inPopup = matches.filter(::isPopupNode)
-        val popup = popupTrigger.observe(inPopup.isNotEmpty(), SystemClock.elapsedRealtime())
-        val message = detector.observe((matches - inPopup.toSet()).size, SystemClock.elapsedRealtime())
+        val inChat = matches.filter(::isInChat)
+        val message = detector.observe(readChat(inChat), now)
+        // A popup already up when this screen was opened cannot be shown to be new.
+        val popup = popupTrigger.observe(inPopup.isNotEmpty(), now) && detector.settled
         if (popup || message) requestReply(active)
+    }
+
+    /** Only the shape of the chat is read here, and the log says only where it stands. */
+    private fun readChat(matches: List<AccessibilityNodeInfo>): ChatView? {
+        val screen = navigator.readScreen()
+        var chat: AccessibilityNodeInfo? = null
+        for (root in NodeTools.targetRoots(service, WolfUi.PACKAGE)) {
+            NodeTools.walk(root) { node ->
+                if (chat == null && WolfUi.entryName(node.viewIdResourceName) == CHAT_VIEW) chat = node
+            }
+        }
+        val view = chat?.takeIf { screen.hasInput } ?: return null
+        val atEnd = atEndOf(view)
+        if (atEnd != lastScrollState) Log.i(EventLog.TAG, "chat end=$atEnd")
+        lastScrollState = atEnd
+        val bounds = NodeTools.boundsOf(view)
+        val place = "${screen.title}|${bounds.height()}"
+        return ChatView(place, atEnd, matches.map { NodeTools.boundsOf(it).bottom }, bounds.bottom, bounds.height())
+    }
+
+    /** Only the two ends of a list lack a direction to scroll, and it holds whichever way it runs. */
+    private fun atEndOf(chat: AccessibilityNodeInfo): Boolean? {
+        var list: AccessibilityNodeInfo? = null
+        NodeTools.walk(chat) { node ->
+            val name = node.className?.toString().orEmpty()
+            if (list == null && (node.isScrollable || name.endsWith("RecyclerView") || name.endsWith("ListView"))) list = node
+        }
+        val actions = list?.actionList ?: return null
+        val forward = AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD in actions
+        val backward = AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD in actions
+        return !(forward && backward)
     }
 
     private suspend fun answer(active: Params) {
         pendingReply = false
         val sent = replyInChannel(active)
         gate.finish(SystemClock.elapsedRealtime(), sent == true)
-        detector.forgetBaseline()
+        detector.forget()
         if (sent != null) onResult(sent)
     }
 
@@ -180,6 +211,16 @@ class ReactiveEngine(
             current = current.parent
         }
         return true
+    }
+
+    private fun isInChat(node: AccessibilityNodeInfo): Boolean {
+        var current = node.parent
+        var depth = 0
+        while (current != null && depth++ < MAX_ANCESTORS) {
+            if (WolfUi.entryName(current.viewIdResourceName) == CHAT_VIEW) return true
+            current = current.parent
+        }
+        return false
     }
 
     private fun isMessage(node: AccessibilityNodeInfo): Boolean = node.isVisibleToUser && !node.isEditable

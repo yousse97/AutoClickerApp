@@ -145,13 +145,6 @@ class OperatingModeTest {
     }
 
     @Test
-    fun `stopping 24 hour replies waits for a person, and Daily waits for the next start`() {
-        assertEquals(Long.MAX_VALUE, ScheduleKeeper.blockUntil(autoReply, noon))
-        val daily = autoReply.copy(reactive = replies.copy(hours = daily(13 * 60, 14 * 60)))
-        assertEquals(ScheduleKeeper.toEpochMs(noon.plusHours(1)), ScheduleKeeper.blockUntil(daily, noon))
-    }
-
-    @Test
     fun `the return comes 5 seconds before the hours and once for the whole stretch`() {
         val reply = replies.copy(hours = daily(13 * 60, 14 * 60))
         val planner = ReturnPlanner()

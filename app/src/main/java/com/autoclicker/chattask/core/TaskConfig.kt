@@ -33,6 +33,18 @@ data class TaskConfig(
     val skipListItems: Boolean = true,
     val keepScreenOn: Boolean = false,
 ) {
+    /** What Home edits. Everything else, including each command's hours, stays as saved. */
+    fun withQuickCommands(edited: List<CommandEntry>, room: String) =
+        copy(commands = edited, targetRoom = room.trim())
+
+    fun withQuickReply(triggerText: String, command: String, room: String) = copy(
+        reactive = reactive.copy(
+            triggers = parseKeywords(triggerText),
+            command = command.trim(),
+            room = room.trim(),
+        ),
+    )
+
     private val repliesOnly: Boolean get() = mode == OperatingMode.AUTO_REPLY
 
     /** The hours that drive the schedule in the current mode. */

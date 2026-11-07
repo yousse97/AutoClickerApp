@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -31,7 +32,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var store: SettingsStore
     private lateinit var statusCard: StatusCardView
     private var config = TaskConfig()
-    private lateinit var modeChoice: ModeChoice
+    private var quick: SettingsSection? = null
+    private var quickForm: QuickForm? = null
     private var warnings: List<HomeWarning> = emptyList()
     private var detachedTicks = 0
 
@@ -46,13 +48,14 @@ class MainActivity : AppCompatActivity() {
         store = SettingsStore(this)
         config = store.loadConfig()
         statusCard = StatusCardView(this, binding)
-        modeChoice = ModeChoice(binding.modeChoice, store, ::refresh)
+        showQuick(savedInstanceState)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
                     val status = TaskBus.status.value
                     statusCard.render(status, config)
+                    binding.textQuickState.setText(if (quickDirty()) R.string.quick_unsaved else R.string.quick_saved)
                     val running = status.phase != TaskPhase.IDLE
                     binding.buttonStartStop.setText(if (running) R.string.button_stop else R.string.button_start)
                     showRecovery()
@@ -62,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.buttonStartStop.setOnClickListener { startOrStop() }
+        binding.buttonQuickSave.setOnClickListener { saveQuick() }
         binding.buttonFix.setOnClickListener {
             warnings.firstOrNull()?.let { openPage(it.page, showErrors = true) }
         }
@@ -72,6 +76,10 @@ class MainActivity : AppCompatActivity() {
         binding.topBar.buttonMenu.setOnClickListener { binding.drawer.openDrawer(GravityCompat.START) }
         binding.navigation.setNavigationItemSelectedListener { item ->
             binding.drawer.closeDrawer(GravityCompat.START)
+            modeOfMenuItem(item.itemId)?.let { mode ->
+                if (ModeChoice.select(this, store, mode)) refresh()
+                return@setNavigationItemSelectedListener true
+            }
             when (val destination = destinationOf(item.itemId)) {
                 is Destination.Page -> openPage(destination.page)
                 Destination.Log -> startActivity(Intent(this, LogActivity::class.java))
@@ -95,15 +103,51 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        modeChoice.show()
         refresh()
     }
 
     private fun refresh() {
         config = store.loadConfig()
+        binding.textMode.setText(config.mode.title)
+        binding.navigation.setCheckedItem(menuItemOf(config.mode))
+        showQuick(null)
         warnings = homeWarnings(config, readPermissions(this))
         binding.cardWarning.visibility = if (warnings.isEmpty()) View.GONE else View.VISIBLE
         binding.textWarning.text = warnings.joinToString("\n") { getString(it.text) }
+    }
+
+    /** Fields being edited stay, and anything else follows what is saved. */
+    private fun showQuick(state: Bundle?) {
+        val form = QuickForm.of(store.operatingMode)
+        val keep = quickForm == form && quickDirty()
+        if (quickForm != form) {
+            binding.quickContent.removeAllViews()
+            quick = quickSection(form, layoutInflater, binding.quickContent).also { binding.quickContent.addView(it.view) }
+            quickForm = form
+        }
+        if (!keep) quick?.show(config)
+        state?.let { quick?.restoreState(it) }
+    }
+
+    private fun quickDirty(): Boolean = quick?.let { it.read(config) != config } == true
+
+    /** Saves and nothing more. A session in progress follows it, but Save never starts or sends. */
+    private fun saveQuick() {
+        val section = quick ?: return
+        val saved = store.loadConfig()
+        val form = section.read(saved)
+        val errors = form.validate()
+        section.showErrors(errors) { getString(messageFor(it)) }
+        if (errors.isNotEmpty()) return
+        store.saveConfig(form)
+        AutoTaskService.instance?.reloadSettings()
+        refresh()
+        Toast.makeText(this, R.string.toast_saved, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        quick?.saveState(outState)
     }
 
     private fun openPage(page: SettingsPage, showErrors: Boolean = false) =
@@ -126,6 +170,10 @@ class MainActivity : AppCompatActivity() {
     private fun startOrStop() {
         if (TaskBus.status.value.phase != TaskPhase.IDLE) {
             AutoTaskService.instance?.stopSession()
+            return
+        }
+        if (quickDirty()) {
+            Toast.makeText(this, R.string.quick_save_first, Toast.LENGTH_LONG).show()
             return
         }
         SessionControl.start(this) { openPage(it.page, showErrors = true) }
