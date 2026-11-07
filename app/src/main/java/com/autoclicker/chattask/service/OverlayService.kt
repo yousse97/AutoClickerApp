@@ -231,10 +231,11 @@ class OverlayService : Service() {
         val direction = texts.resources.configuration.layoutDirection
         if (binding.root.layoutDirection != direction) binding.root.layoutDirection = direction
         if (status.overlaySize >= 0 && status.overlaySize != shownSize) applyOverlaySize()
-        val idle = status.idleUntilMs > 0
+        val idle = status.idleUntilMs > 0 || status.scheduleNeeded
         val state = homeStateOf(status, status.stoppedByError)
         binding.textCountdown.show(
             when {
+                status.scheduleNeeded -> "--:--"
                 idle -> idleTime(status)
                 status.phase != TaskPhase.IDLE -> formatDuration(status.nextInMs)
                 else -> "--:--"
@@ -299,8 +300,11 @@ class OverlayService : Service() {
     private fun idleTime(status: TaskStatus): String =
         DateFormat.getTimeFormat(texts).format(Date(status.idleUntilMs))
 
-    private fun idleText(status: TaskStatus): String =
+    private fun idleText(status: TaskStatus): String = if (status.scheduleNeeded) {
+        texts.getString(R.string.status_schedule_needed)
+    } else {
         texts.getString(R.string.status_idle_until, idleTime(status))
+    }
 
     /** The state always has a text label too, so color is never the only signal. */
     private fun applyState(state: HomeState, status: TaskStatus) {
@@ -327,7 +331,7 @@ class OverlayService : Service() {
             binding.textCountdown.setTextColor(countdown)
             binding.root.setCardBackgroundColor(getColor(if (ready) R.color.overlay_card_alert else R.color.overlay_card))
         }
-        binding.progressNext.progress = if (status.idleUntilMs > 0) 0 else progressOf(status)
+        binding.progressNext.progress = if (status.idleUntilMs > 0 || status.scheduleNeeded) 0 else progressOf(status)
     }
 
     /** The share of the interval still left for the next command. */

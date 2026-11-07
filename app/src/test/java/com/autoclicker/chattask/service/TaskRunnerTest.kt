@@ -395,4 +395,87 @@ class TaskRunnerTest {
 
         assertEquals(4, recorder.plansSaved)
     }
+
+    private fun replan(runner: TaskRunner, old: List<CommandEntry>, new: List<CommandEntry>) {
+        runner.replacePlan(noJitter) { offsets, base ->
+            CommandTimers.of(new, 3_000).apply { restore(CommandTimers.carryOffsets(old, offsets, new), base) }
+        }
+    }
+
+    @Test
+    fun `a saved schedule reaches the running timers and keeps the counts`() = runTest {
+        val sent = ArrayList<Int>()
+        val runner = indexRunner(backgroundScope) { sent += it; CycleResult.SENT }
+        val allDay = CommandEntry("a", 60)
+        startCommands(runner, allDay)
+        advanceTimeBy(4_000)
+        runCurrent()
+        assertEquals(1, sent.size)
+
+        val outside = allDay.copy(allDay = false, startMinute = 13 * 60, endMinute = 14 * 60)
+        replan(runner, listOf(allDay), listOf(outside))
+        advanceTimeBy(200_000)
+        runCurrent()
+
+        assertEquals(1, sent.size)
+        assertTrue(runner.view().allIdle)
+        assertEquals(1, runner.view().sent)
+    }
+
+    @Test
+    fun `clearing the times stops sends until a schedule is set again`() = runTest {
+        val sent = ArrayList<Int>()
+        val runner = indexRunner(backgroundScope) { sent += it; CycleResult.SENT }
+        val daily = CommandEntry("a", 60, allDay = false, startMinute = 11 * 60, endMinute = 13 * 60)
+        startCommands(runner, daily)
+        advanceTimeBy(4_000)
+        runCurrent()
+        assertEquals(1, sent.size)
+
+        val cleared = CommandEntry("a", 60, allDay = false)
+        replan(runner, listOf(daily), listOf(cleared))
+        advanceTimeBy(200_000)
+        runCurrent()
+        assertEquals(1, sent.size)
+
+        replan(runner, listOf(cleared), listOf(cleared.copy(allDay = true)))
+        advanceTimeBy(4_000)
+        runCurrent()
+        assertEquals(2, sent.size)
+    }
+
+    @Test
+    fun `an unrelated edit does not move the next send`() = runTest {
+        val sent = ArrayList<Int>()
+        val runner = indexRunner(backgroundScope) { sent += it; CycleResult.SENT }
+        val command = CommandEntry("a", 60)
+        startCommands(runner, command)
+        advanceTimeBy(4_000)
+        runCurrent()
+        val before = runner.view().nextInMs
+
+        replan(runner, listOf(command), listOf(command.copy(text = "edited")))
+
+        assertEquals(before, runner.view().nextInMs)
+        assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun `a change saved during a send waits for that send`() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val sent = ArrayList<Int>()
+        val runner = indexRunner(backgroundScope) { gate.await(); sent += it; CycleResult.SENT }
+        val command = CommandEntry("a", 60)
+        startCommands(runner, command)
+        advanceTimeBy(4_000)
+        runCurrent()
+
+        replan(runner, listOf(command), listOf(command.copy(text = "edited")))
+        gate.complete(Unit)
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(1, sent.size)
+        assertTrue(runner.view().nextInMs > 0)
+    }
 }

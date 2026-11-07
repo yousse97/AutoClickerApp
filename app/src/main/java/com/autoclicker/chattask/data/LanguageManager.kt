@@ -3,9 +3,24 @@ package com.autoclicker.chattask.data
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.autoclicker.chattask.R
 import java.util.Locale
+
+/** The two languages of the app, and their rows in the language selector. */
+enum class LanguageChoice(val tag: String, @IdRes val itemId: Int) {
+    ARABIC("ar", R.id.languageArabic),
+    ENGLISH("en", R.id.languageEnglish),
+    ;
+
+    companion object {
+        fun fromItem(@IdRes itemId: Int): LanguageChoice? = entries.firstOrNull { it.itemId == itemId }
+
+        fun fromLanguage(language: String): LanguageChoice = if (language == ARABIC.tag) ARABIC else ENGLISH
+    }
+}
 
 /**
  * Switches the app between English and Arabic.
@@ -16,19 +31,13 @@ import java.util.Locale
 object LanguageManager {
     private const val PREFS = "language"
     private const val KEY_TAG = "tag"
-    private const val ARABIC = "ar"
-    private const val ENGLISH = "en"
 
     private var localized: Pair<String, Context>? = null
 
-    fun toggle(context: Context) {
-        val tag = if (isArabic(context)) ENGLISH else ARABIC
-        prefs(context).edit().putString(KEY_TAG, tag).apply()
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+    fun select(context: Context, choice: LanguageChoice) {
+        prefs(context).edit().putString(KEY_TAG, choice.tag).apply()
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(choice.tag))
     }
-
-    private fun isArabic(context: Context): Boolean =
-        context.resources.configuration.locales[0].language == ARABIC
 
     /** A context whose strings follow the chosen language. Cheap enough to call on each render. */
     fun localize(context: Context): Context {

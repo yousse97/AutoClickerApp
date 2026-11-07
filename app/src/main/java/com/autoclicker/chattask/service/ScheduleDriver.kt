@@ -23,7 +23,7 @@ class ScheduleDriver(
     private var missedForStart = 0L
     private var idleScreenWarned = false
     private var overlayDismissed = false
-    private var wasIdle = false
+    private var wasIdle: Boolean? = null
 
     fun onOverlayClosed() {
         overlayDismissed = true
@@ -77,21 +77,26 @@ class ScheduleDriver(
 
     /** Called each second during a session, with whether all commands are idle right now. */
     fun tickSession(allIdle: Boolean) {
-        if (allIdle != wasIdle) {
-            wasIdle = allIdle
+        // The first look only learns the state, so a service rebind during idle logs no new stop.
+        val changed = wasIdle != null && allIdle != wasIdle
+        wasIdle = allIdle
+        if (changed) {
             EventLog.add(service, if (allIdle) EventType.SCHEDULE_STOP else EventType.SCHEDULE_START)
             ScheduleKeeper.arm(service, config)
         }
         if (allIdle) showIdle(LocalDateTime.now()) else clearIdle()
     }
 
-    private fun clearIdle() = TaskBus.update { it.copy(idleUntilMs = 0, idleKeepScreen = false) }
+    private fun clearIdle() =
+        TaskBus.update { it.copy(idleUntilMs = 0, idleKeepScreen = false, scheduleNeeded = false) }
 
     /** The bar and services stay up, and nothing is sent until the next start. */
     private fun showIdle(now: LocalDateTime) {
         val until = ScheduleKeeper.nextStart(config, now)?.let(ScheduleKeeper::toEpochMs) ?: 0
         val keepOn = config.keepScreenWhenIdle
-        TaskBus.update { it.copy(idleUntilMs = until, idleKeepScreen = keepOn) }
+        TaskBus.update {
+            it.copy(idleUntilMs = until, idleKeepScreen = keepOn, scheduleNeeded = until == 0L)
+        }
         if (keepOn && !overlayDismissed && !OverlayService.isRunning) OverlayService.start(service)
         val locked = NodeTools.foreground(service) == Foreground.LOCKED
         if (keepOn && locked && !idleScreenWarned) {

@@ -28,7 +28,7 @@ class SettingsStore(context: Context) {
     private val secure = SecureStore(context)
 
     /** Old Work and Rest times cannot become clock times, so the user is asked to pick them. */
-    var schedulePromptPending: Boolean
+    var legacySchedulePrompt: Boolean
         get() = prefs.contains(KEY_DURATION) && !prefs.getBoolean(KEY_SCHEDULE_PROMPT_DONE, false)
         set(value) = prefs.edit().putBoolean(KEY_SCHEDULE_PROMPT_DONE, !value).apply()
 

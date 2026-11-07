@@ -54,11 +54,17 @@ class TaskConfigTest {
     }
 
     @Test
-    fun `daily hours need two different times`() {
-        val unset = CommandEntry("a", 610, allDay = false)
-        val same = CommandEntry("a", 610, allDay = false, startMinute = 60, endMinute = 60)
-        assertEquals(listOf(ConfigError.SCHEDULE_TIMES), TaskConfig(commands = listOf(unset)).validate())
-        assertEquals(listOf(ConfigError.SCHEDULE_TIMES), TaskConfig(commands = listOf(same)).validate())
+    fun `daily without valid times can be saved and asks for a schedule`() {
+        val unset = TaskConfig(commands = listOf(CommandEntry("a", 610, allDay = false)))
+        val same = TaskConfig(
+            commands = listOf(CommandEntry("a", 610, allDay = false, startMinute = 60, endMinute = 60)),
+        )
+        val allDay = TaskConfig(commands = listOf(CommandEntry("a", 610)))
+        assertEquals(emptyList<ConfigError>(), unset.validate())
+        assertEquals(emptyList<ConfigError>(), same.validate())
+        assertEquals(true, unset.needsSchedule)
+        assertEquals(true, same.needsSchedule)
+        assertEquals(false, allDay.needsSchedule)
     }
 
     @Test

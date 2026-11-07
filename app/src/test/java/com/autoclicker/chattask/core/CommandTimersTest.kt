@@ -156,4 +156,36 @@ class CommandTimersTest {
         list.markDone(1, 1_000, 0)
         assertEquals(1, list.nextIndex())
     }
+
+    @Test
+    fun `a daily command without times never starts and has no timer`() {
+        val wall = java.time.LocalDateTime.of(2026, 1, 1, 12, 0)
+        val timers = CommandTimers.of(listOf(CommandEntry("a", 610, allDay = false)), 3_000)
+        assertEquals(emptyList<Int>(), timers.refresh(0, wall))
+        assertEquals(true, timers.allIdle)
+        assertEquals(emptyList<Int>(), timers.dueOrder(1_000_000))
+    }
+
+    @Test
+    fun `edits keep timers by text then by row, and a new row starts fresh`() {
+        val a = CommandEntry("a", 610)
+        val b = CommandEntry("b", 610)
+        val offsetA = TimerOffset(0, 100_000, false)
+        val offsetB = TimerOffset(0, 200_000, true)
+        val old = listOf(a, b)
+        val offsets = listOf(offsetA, offsetB)
+        assertEquals(listOf(offsetB, offsetA), CommandTimers.carryOffsets(old, offsets, listOf(b, a)))
+        assertEquals(offsets, CommandTimers.carryOffsets(old, offsets, listOf(a.copy(text = "edited"), b)))
+        assertEquals(listOf(offsetA, offsetB, null), CommandTimers.carryOffsets(old, offsets, old + CommandEntry("c", 610)))
+    }
+
+    @Test
+    fun `a shorter interval pulls the next send in, a longer one leaves it`() {
+        val old = listOf(CommandEntry("a", 610))
+        val offsets = listOf(TimerOffset(0, 300_000, false))
+        val shorter = CommandTimers.carryOffsets(old, offsets, listOf(CommandEntry("a", 60)))
+        val longer = CommandTimers.carryOffsets(old, offsets, listOf(CommandEntry("a", 900)))
+        assertEquals(60_000L, shorter[0]?.nextInMs)
+        assertEquals(300_000L, longer[0]?.nextInMs)
+    }
 }

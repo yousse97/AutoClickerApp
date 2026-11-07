@@ -116,6 +116,14 @@
             android:layout_weight="1" />
     </LinearLayout>
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonClearTimes"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_clear_times"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/textSummary"
         android:layout_width="match_parent"

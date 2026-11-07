@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menuCommands" android:title="@string/page_commands" />
+    <item android:id="@+id/menuAutoReply" android:title="@string/page_auto_reply" />
+    <item android:id="@+id/menuChannel" android:title="@string/page_channel" />
+    <item android:id="@+id/menuTimer" android:title="@string/page_timer" />
+    <item android:id="@+id/menuHelp" android:title="@string/page_help" />
+    <item android:id="@+id/menuLog" android:title="@string/page_log" />
+    <item android:id="@+id/menuAll" android:title="@string/page_all" />
+</menu>

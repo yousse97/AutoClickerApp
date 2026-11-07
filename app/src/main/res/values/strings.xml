@@ -3,9 +3,6 @@
     <string name="app_name">YOUSE TIMER</string>
     <string name="accessibility_service_label">YOUSE TIMER</string>
     <string name="accessibility_service_description">Reads the WOLF screen and acts only inside WOLF, during a session you start. Chat text is not saved, and nothing is sent to the internet.</string>
-
-    <string name="section_permissions">Permissions</string>
-    <string name="section_task">Task</string>
     <string name="section_popups">Popups</string>
     <string name="restricted_settings_hint">If Android blocks the accessibility toggle as a restricted setting, open App info for this app, tap the ⋮ menu, choose Allow restricted settings, then try again.</string>
     <string name="permission_accessibility">Accessibility service</string>
@@ -24,7 +21,6 @@
     <string name="helper_keywords">Separate with commas. Matches whole words on short button labels.</string>
     <string name="label_skip_lists">Ignore buttons inside chat lists</string>
     <string name="label_keep_screen">Keep the screen on while running</string>
-    <string name="button_launch">Save and show controls</string>
     <string name="toast_permissions_needed">Grant the accessibility and overlay permissions first.</string>
 
     <string name="error_empty_command">Enter your command.</string>
@@ -55,8 +51,6 @@
     <string name="notification_running">Session running</string>
     <string name="notification_paused">Session paused</string>
     <string name="notification_exit">Stop and close</string>
-
-    <string name="language_switch_label" translatable="false">العربية</string>
     <string name="language_switch_description">Switch language</string>
 
 
@@ -74,12 +68,8 @@
     <string name="notice_not_launchable">Could not open the target app</string>
     <string name="notice_no_chat">Chat screen not found</string>
     <string name="notice_room_not_found">Channel not found in this account</string>
-
-    <string name="tab_task1">Task 1 (Primary Periodic)</string>
-    <string name="tab_task2">YOUSE 2 (Reactive / Secondary Event)</string>
-    <string name="section_shared">Shared settings</string>
-    <string name="label_reactive_enabled">Enable YOUSE 2</string>
-    <string name="helper_reactive">Runs alongside Task 1 during a session, including rest periods, and only while the chat is on screen.</string>
+    <string name="label_reactive_enabled">Enable Auto Reply</string>
+    <string name="helper_reactive">Runs alongside your scheduled commands during a session, including idle hours, and only while the chat is on screen.</string>
     <string name="label_triggers">Trigger phrases</string>
     <string name="helper_keywords_reactive">One per line, or separated by commas.</string>
     <string name="label_reaction_command">Reaction command</string>
@@ -164,7 +154,6 @@
     <string name="schedule_not_set">Not set</string>
     <string name="label_idle_screen">Keep screen on during idle hours</string>
     <string name="label_vibrate">Vibrate 30 seconds before a send when outside WOLF</string>
-    <string name="error_schedule_times">Pick a start time and a different end time for each command with daily hours.</string>
     <string name="button_check">Check without sending</string>
     <string name="check_open_wolf">Open WOLF and check</string>
     <string name="check_pass">Pass</string>
@@ -231,12 +220,46 @@
     <string name="label_daily">Daily schedule</string>
     <string name="summary_all_day">Runs all day, every day.</string>
     <string name="summary_daily">Runs every day from %1$s to %2$s. Idle from %2$s to %1$s.</string>
-    <string name="summary_pick_times">Choose a From time and a To time.</string>
-    <string name="schedule_prompt">Work and Rest were replaced by clock schedules. Set a daily schedule for each command, or keep 24 hours continuous, then save.</string>
+    <string name="summary_pick_times">Choose a From time and a different To time. This command will not send until then.</string>
+    <string name="schedule_prompt">Set a daily schedule for each command, or choose 24 hours continuous. A Daily command without valid times will not send.</string>
     <string name="alert_stopped_anr">WOLF stopped responding 3 times in a row. Nothing more was sent.</string>
     <string name="event_anr_seen">WOLF not responding: waiting</string>
     <string name="event_anr_closed">WOLF not responding: closed, reopening</string>
     <string name="event_anr_close_failed">WOLF not responding: could not close it</string>
     <string name="event_anr_gave_up">WOLF not responding: too many times</string>
     <string name="event_stopped_anr">Stopped: WOLF stopped responding 3 times</string>
+    <string name="title_brand" translatable="false">YOUSE</string>
+    <string name="language_name_arabic" translatable="false">العربية</string>
+    <string name="language_name_english" translatable="false">English</string>
+    <string name="menu_open">Open menu</string>
+    <string name="button_back">Back</string>
+    <string name="page_commands">Commands and Schedule</string>
+    <string name="page_auto_reply">Auto Reply</string>
+    <string name="page_channel">WOLF and Channel</string>
+    <string name="page_timer">Floating Timer</string>
+    <string name="page_help">Permissions and Help</string>
+    <string name="page_log">Log</string>
+    <string name="page_all">All Settings</string>
+    <string name="button_start">Start</string>
+    <string name="button_stop">Stop</string>
+    <string name="button_save">Save</string>
+    <string name="toast_saved">Saved</string>
+    <string name="button_fix">Fix this</string>
+    <string name="section_toggle">Show or hide this section</string>
+    <string name="button_clear_times">Clear times</string>
+    <string name="warning_title">Needs attention</string>
+    <string name="warning_accessibility">Accessibility service is off.</string>
+    <string name="warning_overlay">Display over other apps is not allowed.</string>
+    <string name="warning_notifications">Notifications are off.</string>
+    <string name="warning_battery">Battery optimization can stop the app.</string>
+    <string name="warning_commands">Enter a command and a valid interval.</string>
+    <string name="warning_channel">Enter your channel, or turn off the channel restriction.</string>
+    <string name="warning_auto_reply">Auto Reply is missing a required setting.</string>
+    <string name="warning_schedule">A command is set to Daily without valid times, so it will not send.</string>
+    <string name="discard_title">Changes not saved</string>
+    <string name="discard_message">Some values need fixing. Keep editing, or leave without saving these changes?</string>
+    <string name="button_keep_editing">Keep editing</string>
+    <string name="button_discard">Leave without saving</string>
+    <string name="permission_exact_alarm">Exact alarms</string>
+    <string name="status_schedule_needed">Set a schedule to start</string>
 </resources>

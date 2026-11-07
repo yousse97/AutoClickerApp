@@ -21,6 +21,8 @@ data class TaskStatus(
     /** The wall clock time idle ends, or 0 when the daily schedule is not idling. */
     val idleUntilMs: Long = 0,
     val idleKeepScreen: Boolean = false,
+    /** Nothing can start until a Daily command gets its times. */
+    val scheduleNeeded: Boolean = false,
     val heldByLock: Boolean = false,
     /** The size chosen in settings, or -1 until one is chosen in this run. */
     val overlaySize: Int = -1,

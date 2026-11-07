@@ -16,6 +16,8 @@ class GuideActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val binding = ActivityGuideBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.pageBar.root.setTitle(R.string.guide_title)
+        binding.pageBar.root.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         val packageUri = Uri.parse("package:$packageName")
         val appInfo = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri)
         binding.buttonRestricted.setOnClickListener { open(appInfo) }

@@ -59,12 +59,18 @@ class TaskRunner(
         fun onCommandSkipped(index: Int) = Unit
     }
 
+    private class PlanChange(
+        val jitter: JitterPolicy,
+        val rebuild: (List<TimerOffset?>, Long) -> CommandTimers,
+    )
+
     private var job: Job? = null
     private var timers: CommandTimers? = null
     private var jitter = JitterPolicy(0, 0)
     private var pausedAtMs: Long? = null
     private var actionInFlight = false
     private var lastSendMs: Long? = null
+    private val pendingPlans = ArrayDeque<PlanChange>()
     private var sent = 0
     private var failed = 0
 
@@ -111,6 +117,7 @@ class TaskRunner(
     fun resume() {
         if (phase != TaskPhase.PAUSED) return
         val pausedAt = pausedAtMs ?: return
+        applyPendingPlans()
         timers?.shiftBy(clock() - pausedAt)
         pausedAtMs = null
         phase = TaskPhase.RUNNING
@@ -119,10 +126,32 @@ class TaskRunner(
         listener.onTick(view())
     }
 
+    /** Applies saved edits to the running session. A send in progress finishes on the old plan. */
+    fun replacePlan(
+        jitterPolicy: JitterPolicy,
+        rebuild: (offsets: List<TimerOffset?>, baseMs: Long) -> CommandTimers,
+    ) {
+        if (phase == TaskPhase.IDLE) return
+        pendingPlans.addLast(PlanChange(jitterPolicy, rebuild))
+        if (!actionInFlight) applyPendingPlans()
+    }
+
+    private fun applyPendingPlans() {
+        if (pendingPlans.isEmpty()) return
+        while (pendingPlans.isNotEmpty()) {
+            val change = pendingPlans.removeFirst()
+            timers = change.rebuild(timerOffsets(), pausedAtMs ?: clock())
+            jitter = change.jitter
+        }
+        listener.onPlanChanged()
+        listener.onTick(view())
+    }
+
     fun stop() {
         job?.cancel()
         job = null
         timers = null
+        pendingPlans.clear()
         pausedAtMs = null
         phase = TaskPhase.IDLE
     }
@@ -150,6 +179,7 @@ class TaskRunner(
     private fun launchLoop() {
         job = scope.launch {
             while (isActive) {
+                if (!actionInFlight) applyPendingPlans()
                 val active = timers ?: return@launch
                 val now = clock()
                 active.refresh(now, wallClock()).forEach(listener::onCommandSkipped)

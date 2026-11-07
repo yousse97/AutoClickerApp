@@ -118,7 +118,22 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         bar.vibrate = config.vibrateBeforeSend
         bar.returnBeforeSend = config.returnBeforeSend
         ScheduleKeeper.arm(this, config)
+        session?.let { applyToSession(it, config) }
         tickSchedule()
+    }
+
+    /** The session follows what was saved. Unchanged commands keep their place in the interval. */
+    private fun applyToSession(current: Session, config: TaskConfig) {
+        if (current.config == config) return
+        val updated = Session(config)
+        session = updated
+        configureEngines(updated)
+        val oldCommands = current.config.commands
+        runner.replacePlan(jitterOf(config)) { offsets, baseMs ->
+            CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS).apply {
+                restore(CommandTimers.carryOffsets(oldCommands, offsets, config.commands), baseMs)
+            }
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -160,6 +175,13 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     private fun startManually() {
         store.blockedUntilMs = 0
         startNewSession(scheduled = false)
+    }
+
+    /** Home can start from anywhere: WOLF is opened 5 seconds before the first send is due. */
+    fun startFromHome() {
+        if (runner.phase != TaskPhase.IDLE) return
+        store.blockedUntilMs = 0
+        startNewSession(scheduled = true)
     }
 
     fun pauseSession() = runner.pause()
@@ -225,6 +247,10 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         guard = SessionGuard()
         relaunching = false
         applyEventFilter(true)
+        configureEngines(newSession)
+    }
+
+    private fun configureEngines(newSession: Session) {
         popups.configure(
             target = WolfUi.PACKAGE,
             keywords = newSession.config.popupKeywords,

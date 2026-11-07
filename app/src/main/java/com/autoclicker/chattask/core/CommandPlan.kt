@@ -13,6 +13,8 @@ data class CommandEntry(
 ) {
     val window: DailySchedule get() = DailySchedule(startMinute, endMinute)
 
+    val needsSchedule: Boolean get() = !allDay && !window.isComplete
+
     fun isActive(now: LocalDateTime): Boolean = allDay || window.isActive(now)
 }
 
@@ -119,6 +121,33 @@ class CommandTimers(
             commands.map { command -> Spec(command.intervalSec * 1000L, command::isActive) },
             firstDelayMs,
         )
+
+        /**
+         * Where each edited command picks up. A command keeps the timer of the same text, or else
+         * of its row, so editing never sends early. Only a new row starts fresh.
+         */
+        fun carryOffsets(
+            old: List<CommandEntry>,
+            offsets: List<TimerOffset?>,
+            new: List<CommandEntry>,
+        ): List<TimerOffset?> {
+            val free = old.indices.toMutableSet()
+            val source = arrayOfNulls<Int>(new.size)
+            new.forEachIndexed { index, command ->
+                val same = free.firstOrNull { old[it].text == command.text } ?: return@forEachIndexed
+                source[index] = same
+                free.remove(same)
+            }
+            new.indices.filter { source[it] == null && it in free }.forEach {
+                source[it] = it
+                free.remove(it)
+            }
+            return new.mapIndexed { index, command ->
+                source[index]?.let(offsets::getOrNull)?.let {
+                    it.copy(nextInMs = minOf(it.nextInMs, command.intervalSec * 1000L))
+                }
+            }
+        }
 
         /** One always-active timer following [plan]. */
         fun single(plan: SessionSchedule, firstDelayMs: Long) =

@@ -20,6 +20,9 @@ data class TaskConfig(
     val skipListItems: Boolean = true,
     val keepScreenOn: Boolean = false,
 ) {
+    /** A Daily command without valid times is valid to save: it just waits and sends nothing. */
+    val needsSchedule: Boolean get() = commands.any { it.needsSchedule }
+
     fun validate(): List<ConfigError> = buildList {
         val texts = commands.map { it.text.trim() }
         if (texts.isEmpty() || texts.any { it.isEmpty() }) add(ConfigError.EMPTY_COMMAND)
@@ -31,7 +34,6 @@ data class TaskConfig(
         if (jitterMinSec < 0 || jitterMaxSec < jitterMinSec) add(ConfigError.JITTER_RANGE)
         val intervalsSet = shortest >= MIN_INTERVAL_SEC
         if (intervalsSet && jitterMaxSec + MIN_JITTER_MARGIN_SEC > shortest) add(ConfigError.JITTER_TOO_LARGE)
-        if (commands.any { !it.allDay && !it.window.isComplete }) add(ConfigError.SCHEDULE_TIMES)
         val rooms = listOf(targetRoom, reactive.room)
         if (rooms.any { it.trim().length > MAX_ROOM_LENGTH }) add(ConfigError.ROOM_TOO_LONG)
         if (restrictToRoom && targetRoom.isBlank()) add(ConfigError.ROOM_REQUIRED)
@@ -72,5 +74,4 @@ enum class ConfigError {
     REACTIVE_NO_TRIGGER,
     REACTIVE_NO_COMMAND,
     REACTIVE_ROOM_REQUIRED,
-    SCHEDULE_TIMES,
 }

@@ -66,6 +66,8 @@ class StatusCardView(private val context: Context, private val binding: Activity
     private fun commandLine(index: Int, command: CommandEntry, view: CommandView?): String {
         val hours = if (command.allDay) {
             context.getString(R.string.status_all_day)
+        } else if (command.needsSchedule) {
+            context.getString(R.string.schedule_not_set)
         } else {
             "${CommandListEditor.timeText(binding.root, command.startMinute)} - " +
                 CommandListEditor.timeText(binding.root, command.endMinute)
@@ -118,7 +120,11 @@ class StatusCardView(private val context: Context, private val binding: Activity
         HomeState.PAUSED -> context.getString(
             if (status.heldByLock) R.string.notice_screen_locked else R.string.overlay_paused,
         )
-        HomeState.IDLE -> context.getString(R.string.status_idle_until, time(status.idleUntilMs, false))
+        HomeState.IDLE -> if (status.scheduleNeeded) {
+            context.getString(R.string.status_schedule_needed)
+        } else {
+            context.getString(R.string.status_idle_until, time(status.idleUntilMs, false))
+        }
         HomeState.ERROR -> if (status.notice != 0) context.getString(status.notice) else context.getString(R.string.status_error_reason)
         HomeState.STOPPED -> context.getString(R.string.status_stopped_reason)
     }

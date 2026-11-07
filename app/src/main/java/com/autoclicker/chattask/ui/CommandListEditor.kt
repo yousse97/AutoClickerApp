@@ -16,7 +16,11 @@ import java.util.Calendar
  * The dynamic command rows. They share view ids, so the framework cannot restore them. The list
  * opts out of view state, and the activity saves [read] across recreation instead.
  */
-class CommandListEditor(private val list: LinearLayout, private val addButton: View) {
+class CommandListEditor(
+    private val list: LinearLayout,
+    private val addButton: View,
+    private val onChanged: () -> Unit,
+) {
     private class Row(val binding: RowCommandBinding, var start: Int, var end: Int)
 
     private val rows = ArrayList<Row>()
@@ -63,6 +67,11 @@ class CommandListEditor(private val list: LinearLayout, private val addButton: V
         binding.groupHours.setOnCheckedChangeListener { _, _ -> refresh() }
         binding.buttonStart.setOnClickListener { pickTime(row.start) { row.start = it } }
         binding.buttonEnd.setOnClickListener { pickTime(row.end) { row.end = it } }
+        binding.buttonClearTimes.setOnClickListener {
+            row.start = DailySchedule.UNSET
+            row.end = DailySchedule.UNSET
+            refresh()
+        }
         binding.buttonRemove.setOnClickListener {
             rows.remove(row)
             list.removeView(binding.root)
@@ -74,9 +83,9 @@ class CommandListEditor(private val list: LinearLayout, private val addButton: V
     }
 
     private fun pickTime(current: Int, onPicked: (Int) -> Unit) {
-        val known = current >= 0
-        val noon = DailySchedule.MINUTES_PER_DAY / 2
-        val initial = if (known) current else noon
+        val clock = Calendar.getInstance()
+        val nowMinute = clock.get(Calendar.HOUR_OF_DAY) * 60 + clock.get(Calendar.MINUTE)
+        val initial = if (current >= 0) current else nowMinute
         TimePickerDialog(
             list.context,
             { _, hour, minute ->
@@ -100,8 +109,11 @@ class CommandListEditor(private val list: LinearLayout, private val addButton: V
             binding.textSummary.text = summaryOf(allDay, row)
             binding.buttonStart.text = context.getString(R.string.schedule_start, timeLabel(row.start))
             binding.buttonEnd.text = context.getString(R.string.schedule_end, timeLabel(row.end))
+            val anyTime = row.start >= 0 || row.end >= 0
+            binding.buttonClearTimes.visibility = if (!allDay && anyTime) View.VISIBLE else View.GONE
         }
         addButton.visibility = if (rows.size < TaskConfig.MAX_COMMANDS) View.VISIBLE else View.GONE
+        onChanged()
     }
 
     private fun summaryOf(allDay: Boolean, row: Row): String {

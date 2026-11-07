@@ -3,9 +3,6 @@
     <string name="app_name">YOUSE TIMER</string>
     <string name="accessibility_service_label">YOUSE TIMER</string>
     <string name="accessibility_service_description">تقرأ شاشة WOLF وتنفذ الأوامر داخله فقط، أثناء جلسة تبدأها أنت. لا تُحفظ نصوص المحادثات ولا يُرسل أي شيء إلى الإنترنت.</string>
-
-    <string name="section_permissions">الأذونات</string>
-    <string name="section_task">المهمة</string>
     <string name="section_popups">النوافذ المنبثقة</string>
     <string name="restricted_settings_hint">إذا منع أندرويد تفعيل إمكانية الوصول كإعداد مقيّد، افتح معلومات التطبيق، ثم اضغط قائمة ⋮، واختر السماح بالإعدادات المقيّدة، ثم حاول مرة أخرى.</string>
     <string name="permission_accessibility">خدمة إمكانية الوصول</string>
@@ -24,7 +21,6 @@
     <string name="helper_keywords">افصل بينها بفواصل. تتم مطابقة الكلمات الكاملة في تسميات الأزرار القصيرة.</string>
     <string name="label_skip_lists">تجاهل الأزرار داخل قوائم الدردشة</string>
     <string name="label_keep_screen">إبقاء الشاشة مضاءة أثناء التشغيل</string>
-    <string name="button_launch">حفظ وإظهار أدوات التحكم</string>
     <string name="toast_permissions_needed">امنح إذني إمكانية الوصول والظهور فوق التطبيقات أولًا.</string>
 
     <string name="error_empty_command">أدخل أمرك.</string>
@@ -55,8 +51,6 @@
     <string name="notification_running">الجلسة قيد التشغيل</string>
     <string name="notification_paused">الجلسة متوقفة مؤقتًا</string>
     <string name="notification_exit">إيقاف وإغلاق</string>
-
-    <string name="language_switch_label" translatable="false">English</string>
     <string name="language_switch_description">تغيير اللغة</string>
 
 
@@ -74,12 +68,8 @@
     <string name="notice_not_launchable">تعذر فتح التطبيق المستهدف</string>
     <string name="notice_no_chat">لم يتم العثور على شاشة الدردشة</string>
     <string name="notice_room_not_found">لم يتم العثور على القناة في هذا الحساب</string>
-
-    <string name="tab_task1">المهمة 1 (الدورية الأساسية)</string>
-    <string name="tab_task2">YOUSE 2 (التفاعلية / الحدث الثانوي)</string>
-    <string name="section_shared">الإعدادات المشتركة</string>
-    <string name="label_reactive_enabled">تفعيل YOUSE 2</string>
-    <string name="helper_reactive">تعمل بجانب المهمة 1 أثناء الجلسة، بما في ذلك فترات الراحة، وفقط عندما تكون الدردشة ظاهرة على الشاشة.</string>
+    <string name="label_reactive_enabled">تفعيل الرد التلقائي</string>
+    <string name="helper_reactive">يعمل بجانب أوامرك المجدولة أثناء الجلسة، بما في ذلك ساعات الانتظار، وفقط عندما تكون الدردشة ظاهرة على الشاشة.</string>
     <string name="label_triggers">العبارات المحفّزة</string>
     <string name="helper_keywords_reactive">عبارة في كل سطر، أو افصل بينها بفواصل.</string>
     <string name="label_reaction_command">أمر التفاعل</string>
@@ -164,7 +154,6 @@
     <string name="schedule_not_set">غير محدد</string>
     <string name="label_idle_screen">إبقاء الشاشة مضاءة خلال ساعات التوقف</string>
     <string name="label_vibrate">الاهتزاز قبل الإرسال بـ30 ثانية عند الخروج من WOLF</string>
-    <string name="error_schedule_times">اختر وقت بداية ووقت نهاية مختلفين لكل أمر له ساعات يومية.</string>
     <string name="button_check">فحص بدون إرسال</string>
     <string name="check_open_wolf">فتح WOLF والفحص</string>
     <string name="check_pass">ناجح</string>
@@ -231,12 +220,43 @@
     <string name="label_daily">جدول يومي</string>
     <string name="summary_all_day">يعمل طوال اليوم، كل يوم.</string>
     <string name="summary_daily">يعمل كل يوم من %1$s إلى %2$s. في الانتظار من %2$s إلى %1$s.</string>
-    <string name="summary_pick_times">اختر وقت البداية ووقت النهاية.</string>
-    <string name="schedule_prompt">تم استبدال العمل والراحة بجداول حسب الساعة. حدد جدولًا يوميًا لكل أمر، أو أبقِ 24 ساعة متواصلة، ثم احفظ.</string>
+    <string name="summary_pick_times">اختر وقت البداية ووقت نهاية مختلفًا. لن يُرسل هذا الأمر حتى ذلك الحين.</string>
+    <string name="schedule_prompt">حدد جدولًا يوميًا لكل أمر، أو اختر 24 ساعة متواصلة. الأمر اليومي بدون أوقات صحيحة لن يُرسل.</string>
     <string name="alert_stopped_anr">توقف WOLF عن الاستجابة 3 مرات متتالية. لم يُرسل شيء آخر.</string>
     <string name="event_anr_seen">WOLF لا يستجيب: في الانتظار</string>
     <string name="event_anr_closed">WOLF لا يستجيب: تم الإغلاق وإعادة الفتح</string>
     <string name="event_anr_close_failed">WOLF لا يستجيب: تعذر الإغلاق</string>
     <string name="event_anr_gave_up">WOLF لا يستجيب: تكرر كثيرًا</string>
     <string name="event_stopped_anr">توقف: لم يستجب WOLF 3 مرات</string>
+    <string name="menu_open">فتح القائمة</string>
+    <string name="button_back">رجوع</string>
+    <string name="page_commands">الأوامر والجدول</string>
+    <string name="page_auto_reply">الرد التلقائي</string>
+    <string name="page_channel">WOLF والقناة</string>
+    <string name="page_timer">المؤقت العائم</string>
+    <string name="page_help">الأذونات والمساعدة</string>
+    <string name="page_log">السجل</string>
+    <string name="page_all">كل الإعدادات</string>
+    <string name="button_start">بدء</string>
+    <string name="button_stop">إيقاف</string>
+    <string name="button_save">حفظ</string>
+    <string name="toast_saved">تم الحفظ</string>
+    <string name="button_fix">إصلاح</string>
+    <string name="section_toggle">إظهار هذا القسم أو إخفاؤه</string>
+    <string name="button_clear_times">مسح الأوقات</string>
+    <string name="warning_title">يحتاج إلى انتباه</string>
+    <string name="warning_accessibility">خدمة إمكانية الوصول غير مفعلة.</string>
+    <string name="warning_overlay">العرض فوق التطبيقات الأخرى غير مسموح.</string>
+    <string name="warning_notifications">الإشعارات غير مفعلة.</string>
+    <string name="warning_battery">قد يوقف توفير البطارية التطبيق.</string>
+    <string name="warning_commands">أدخل أمرًا وفاصلًا زمنيًا صحيحًا.</string>
+    <string name="warning_channel">أدخل قناتك، أو أوقف تقييد القناة.</string>
+    <string name="warning_auto_reply">الرد التلقائي ينقصه إعداد مطلوب.</string>
+    <string name="warning_schedule">يوجد أمر مضبوط على يوميًا بدون أوقات صحيحة، لذلك لن يُرسل.</string>
+    <string name="discard_title">لم تُحفظ التغييرات</string>
+    <string name="discard_message">بعض القيم تحتاج إلى تصحيح. هل تريد متابعة التعديل، أم المغادرة بدون حفظ هذه التغييرات؟</string>
+    <string name="button_keep_editing">متابعة التعديل</string>
+    <string name="button_discard">المغادرة بدون حفظ</string>
+    <string name="permission_exact_alarm">المنبهات الدقيقة</string>
+    <string name="status_schedule_needed">حدد جدولًا للبدء</string>
 </resources>

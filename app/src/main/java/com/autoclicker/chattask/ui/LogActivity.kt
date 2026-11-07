@@ -18,6 +18,8 @@ class LogActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLogBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.pageBar.root.setTitle(R.string.log_title)
+        binding.pageBar.root.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
     }
 
     override fun onResume() {
