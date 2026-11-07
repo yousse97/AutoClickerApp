@@ -9,8 +9,8 @@ import java.time.LocalDateTime
 class ScheduleAndOverlayTest {
     private fun day(hour: Int, minute: Int = 0) = LocalDateTime.of(2026, 3, 10, hour, minute)
 
-    private val dayWindow = DailySchedule(true, 9 * 60, 17 * 60)
-    private val nightWindow = DailySchedule(true, 22 * 60, 6 * 60)
+    private val dayWindow = DailySchedule(9 * 60, 17 * 60)
+    private val nightWindow = DailySchedule(22 * 60, 6 * 60)
 
     @Test
     fun `a daytime window starts at its start and ends at its end`() {
@@ -38,20 +38,8 @@ class ScheduleAndOverlayTest {
 
     @Test
     fun `an unset or zero-length schedule is never active`() {
-        assertFalse(DailySchedule(enabled = true).isActive(day(12)))
-        assertFalse(DailySchedule(true, 600, 600).isActive(day(10)))
-    }
-
-    @Test
-    fun `an enabled schedule needs two different times, and has no built-in times`() {
-        val own = listOf(CommandEntry("my command"))
-        assertEquals(DailySchedule.UNSET, DailySchedule().startMinute)
-        assertEquals(DailySchedule.UNSET, DailySchedule().endMinute)
-        assertEquals(
-            listOf(ConfigError.SCHEDULE_TIMES),
-            TaskConfig(commands = own, schedule = DailySchedule(enabled = true)).validate(),
-        )
-        assertTrue(TaskConfig(commands = own, schedule = dayWindow).validate().isEmpty())
+        assertFalse(DailySchedule().isActive(day(12)))
+        assertFalse(DailySchedule(600, 600).isActive(day(10)))
     }
 
     @Test

@@ -2,7 +2,6 @@ package com.autoclicker.chattask.service
 
 import android.accessibilityservice.AccessibilityService
 import com.autoclicker.chattask.R
-import com.autoclicker.chattask.core.CommandSequence
 import com.autoclicker.chattask.core.EventType
 import com.autoclicker.chattask.core.Foreground
 import com.autoclicker.chattask.core.TaskConfig
@@ -10,10 +9,10 @@ import com.autoclicker.chattask.core.WolfUi
 import com.autoclicker.chattask.data.EventLog
 import kotlinx.coroutines.delay
 
-/** What one cycle did. [heldBy] is set when a send had to wait. */
-class CycleOutcome(val completed: Boolean, val sentAny: Boolean, val heldBy: EventType?, val sendNotice: Int)
+/** What one send did. [heldBy] is set when it had to wait. */
+class SendOutcome(val sent: Boolean, val heldBy: EventType?, val sendNotice: Int)
 
-/** Sends one cycle's commands, checking before every single send that this is the right place. */
+/** Sends one command, first checking that this is the right place to send it. */
 class CommandCycle(
     private val service: AccessibilityService,
     private val sender: CommandSender,
@@ -43,23 +42,13 @@ class CommandCycle(
         TaskBus.update { it.copy(notice = notice) }
     }
 
-    suspend fun run(config: TaskConfig): CycleOutcome {
-        var sentAny = false
-        var heldBy: EventType? = null
-        var sendNotice = 0
-        val completed = CommandSequence.run(config.commands, isWorking, { delay(it) }) { command ->
-            heldBy = if (isNavigating()) EventType.HELD_OTHER_APP else holdReason(config)
-            if (heldBy != null) return@run false
-            val result = sendWithRetries(command)
-            sendNotice = Notices.forSend(result)
-            heldBy = holdFor(result)
-            if (result == SendResult.SENT) {
-                sentAny = true
-                EventLog.add(service, EventType.SENT)
-            }
-            result == SendResult.SENT
-        }
-        return CycleOutcome(completed, sentAny, heldBy, sendNotice)
+    suspend fun send(config: TaskConfig, command: String): SendOutcome {
+        val held = if (isNavigating()) EventType.HELD_OTHER_APP else holdReason(config)
+        if (held != null) return SendOutcome(false, held, 0)
+        val result = sendWithRetries(command)
+        val sent = result == SendResult.SENT
+        if (sent) EventLog.add(service, EventType.SENT)
+        return SendOutcome(sent, holdFor(result), Notices.forSend(result))
     }
 
     /** Why a send may not go out right now, or null if this is a confirmed valid channel. */

@@ -5,16 +5,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TaskConfigTest {
-    private val own = listOf(CommandEntry("my command"))
+    private val own = listOf(CommandEntry("my command", intervalSec = 610))
 
     @Test
     fun `defaults match the requested schedule and are valid`() {
         val config = TaskConfig()
-        assertEquals(610, config.intervalSec)
         assertEquals(79_200, config.workDurationSec)
         assertEquals(7_260, config.restDurationSec)
         assertTrue("x" in config.popupKeywords && "X" in config.popupKeywords)
-        assertEquals(listOf(ConfigError.EMPTY_COMMAND), config.validate())
+        assertEquals(listOf(ConfigError.EMPTY_COMMAND, ConfigError.INTERVAL_TOO_SHORT), config.validate())
         assertTrue(config.commands.all { it.text.isEmpty() })
         assertTrue(config.targetRoom.isEmpty() && config.reactive.room.isEmpty())
         assertTrue(config.reactive.command.isEmpty())
@@ -24,23 +23,12 @@ class TaskConfigTest {
     fun `rejects each invalid field`() {
         assertEquals(
             listOf(ConfigError.EMPTY_COMMAND),
-            TaskConfig(commands = listOf(CommandEntry("ok"), CommandEntry("  "))).validate(),
+            TaskConfig(commands = listOf(CommandEntry("ok", 610), CommandEntry("  ", 610))).validate(),
         )
-        assertEquals(listOf(ConfigError.EMPTY_COMMAND), TaskConfig(commands = emptyList()).validate())
+        assertTrue(ConfigError.EMPTY_COMMAND in TaskConfig(commands = emptyList()).validate())
         assertEquals(
             listOf(ConfigError.TOO_MANY_COMMANDS),
-            TaskConfig(commands = List(6) { CommandEntry("c$it") }).validate(),
-        )
-        assertEquals(
-            listOf(ConfigError.BAD_COMMAND_DELAY),
-            TaskConfig(                commands = listOf(CommandEntry("a"), CommandEntry("b", SendMode.DELAYED, 0)),
-            ).validate(),
-        )
-        assertEquals(
-            listOf(ConfigError.SEQUENCE_TOO_LONG),
-            TaskConfig(                intervalSec = 60,
-                commands = listOf(CommandEntry("a"), CommandEntry("b", SendMode.DELAYED, 52)),
-            ).validate(),
+            TaskConfig(commands = List(6) { CommandEntry("c$it", 610) }).validate(),
         )
         assertEquals(listOf(ConfigError.ROOM_TOO_LONG), TaskConfig(commands = own, targetRoom = "9".repeat(65)).validate())
         assertEquals(listOf(ConfigError.DURATION_TOO_SHORT), TaskConfig(commands = own, workDurationSec = 60).validate())
@@ -50,14 +38,30 @@ class TaskConfigTest {
         )
         assertEquals(
             listOf(ConfigError.JITTER_TOO_LARGE),
-            TaskConfig(commands = own, intervalSec = 20, workDurationSec = 60, jitterMaxSec = 16).validate(),
+            TaskConfig(commands = listOf(CommandEntry("a", 20)), workDurationSec = 60, jitterMaxSec = 16).validate(),
         )
     }
 
     @Test
-    fun `five commands with delays that fit are valid`() {
-        val commands = List(5) { CommandEntry("c$it", SendMode.DELAYED, 60) }
-        assertTrue(TaskConfig(commands = commands).validate().isEmpty())
+    fun `five commands are allowed`() {
+        assertTrue(TaskConfig(commands = List(5) { CommandEntry("c$it", 60) }).validate().isEmpty())
+    }
+
+    @Test
+    fun `an interval of zero is rejected`() {
+        assertEquals(
+            listOf(ConfigError.INTERVAL_TOO_SHORT),
+            TaskConfig(commands = listOf(CommandEntry("a", 610), CommandEntry("b", 0))).validate()
+                .filter { it == ConfigError.INTERVAL_TOO_SHORT },
+        )
+    }
+
+    @Test
+    fun `daily hours need two different times`() {
+        val unset = CommandEntry("a", 610, allDay = false)
+        val same = CommandEntry("a", 610, allDay = false, startMinute = 60, endMinute = 60)
+        assertEquals(listOf(ConfigError.SCHEDULE_TIMES), TaskConfig(commands = listOf(unset)).validate())
+        assertEquals(listOf(ConfigError.SCHEDULE_TIMES), TaskConfig(commands = listOf(same)).validate())
     }
 
     @Test

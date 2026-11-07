@@ -44,7 +44,7 @@ class RoomNavigator(
                     WolfUi.CHANNELS_SCREEN -> isChannelList = true
                     WolfUi.BOTTOM_NAV -> hasBottomNav = hasBottomNav || node.isVisibleToUser
                 }
-                if (node.contentDescription?.toString() == WolfUi.MEMBERS_BUTTON_LABEL) hasMembers = true
+                if (WolfUi.isMembersButton(node.contentDescription)) hasMembers = true
             }
         }
         return WolfScreen(hasInput, title, hasMembers, isChannelList, hasBottomNav)

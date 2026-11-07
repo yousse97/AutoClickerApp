@@ -14,6 +14,7 @@ object EventLog {
     private const val KEY_EVENTS = "events"
 
     private var ring: EventRing? = null
+    private var snapshot: EventRing? = null
 
     fun add(context: Context, type: EventType) = addAt(context, System.currentTimeMillis(), type)
 
@@ -22,13 +23,22 @@ object EventLog {
         Log.i(TAG, type.name)
         val events = load(context)
         events.add(LogEvent(timeMs, type))
+        snapshot = null
         val json = JSONArray()
         events.all.forEach { json.put(it.timeMs).put(it.type.name) }
         prefs(context).edit().putString(KEY_EVENTS, json.toString()).apply()
     }
 
     @Synchronized
-    fun read(context: Context): EventRing = EventRing(load(context).all)
+    fun read(context: Context): EventRing =
+        snapshot ?: EventRing(load(context).all).also { snapshot = it }
+
+    /** Everything here is already on disk, so the memory copy can go under pressure. */
+    @Synchronized
+    fun releaseCache() {
+        ring = null
+        snapshot = null
+    }
 
     private fun load(context: Context): EventRing = ring ?: EventRing(parse(context)).also { ring = it }
 

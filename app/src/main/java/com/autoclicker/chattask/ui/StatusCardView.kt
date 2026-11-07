@@ -7,23 +7,22 @@ import com.autoclicker.chattask.core.BarState
 import com.autoclicker.chattask.core.CheckItem
 import com.autoclicker.chattask.core.CheckResult
 import com.autoclicker.chattask.core.CheckStatus
-import com.autoclicker.chattask.core.DailySchedule
+import com.autoclicker.chattask.core.CommandEntry
+import com.autoclicker.chattask.core.CommandState
 import com.autoclicker.chattask.core.formatDuration
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.databinding.ActivityMainBinding
+import com.autoclicker.chattask.service.CommandView
 import com.autoclicker.chattask.service.HomeState
 import com.autoclicker.chattask.service.TaskStatus
 import com.autoclicker.chattask.service.homeStateOf
-import java.time.LocalDateTime
-import com.autoclicker.chattask.service.ScheduleKeeper
 import java.util.Date
 
 /** Draws the home status card. Every state has its own words, not only a color. */
 class StatusCardView(private val context: Context, private val binding: ActivityMainBinding) {
-    fun render(status: TaskStatus, schedule: DailySchedule) {
+    fun render(status: TaskStatus, commands: List<CommandEntry>) {
         val events = EventLog.read(context)
-        val stopEvent = events.lastStop
-        val state = homeStateOf(status, stopEvent != null)
+        val state = homeStateOf(status, events.lastStop != null)
         binding.cardStatus.setCardBackgroundColor(context.getColor(colorOf(state)))
         binding.textStatusTitle.setText(titleOf(state))
         binding.textStatusReason.text = reasonOf(state, status)
@@ -33,19 +32,41 @@ class StatusCardView(private val context: Context, private val binding: Activity
             context.getString(R.string.status_next_command, nextCommand(status, none)),
             context.getString(R.string.log_failures, events.consecutiveFailures),
         )
-        scheduleLine(schedule)?.let(lines::add)
+        commands.forEachIndexed { index, command ->
+            lines += commandLine(index, command, status.commands.getOrNull(index))
+        }
         binding.textStatusFacts.text = lines.joinToString("\n")
     }
 
-    private fun nextCommand(status: TaskStatus, none: String): String =
-        if (status.nextInMs > 0) formatDuration(status.nextInMs) else none
+    private fun nextCommand(status: TaskStatus, none: String): String {
+        if (status.nextInMs <= 0) return none
+        val name = status.nextIndex?.let(status.commandNames::getOrNull)
+        return listOfNotNull(name, formatDuration(status.nextInMs)).joinToString(" · ")
+    }
 
-    private fun scheduleLine(schedule: DailySchedule): String? {
-        if (!schedule.enabled || !schedule.isComplete) return null
-        val now = LocalDateTime.now()
-        val next = ScheduleKeeper.toEpochMs(if (schedule.isActive(now)) schedule.nextEnd(now) else schedule.nextStart(now))
-        val text = if (schedule.isActive(now)) R.string.status_schedule_stop else R.string.status_schedule_start
-        return context.getString(text, time(next, false))
+    /** Interval, active hours, state and next send for one command. */
+    private fun commandLine(index: Int, command: CommandEntry, view: CommandView?): String {
+        val hours = if (command.allDay) {
+            context.getString(R.string.status_all_day)
+        } else {
+            "${CommandListEditor.timeText(binding.root, command.startMinute)} - " +
+                CommandListEditor.timeText(binding.root, command.endMinute)
+        }
+        val state = when (view?.state) {
+            CommandState.RUNNING -> R.string.status_running
+            CommandState.PENDING -> R.string.command_pending
+            CommandState.IDLE -> R.string.status_idle
+            null -> R.string.status_stopped
+        }
+        val next = view?.nextInMs?.let(::formatDuration) ?: "-"
+        return context.getString(
+            R.string.status_command_line,
+            index + 1,
+            formatDuration(command.intervalSec * 1000L),
+            hours,
+            context.getString(state),
+            next,
+        )
     }
 
     private fun time(ms: Long, withDate: Boolean): String {

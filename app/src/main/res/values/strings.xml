@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Auto Clicker</string>
-    <string name="accessibility_service_label">Auto Clicker task service</string>
+    <string name="app_name">YOUSE TIMER</string>
+    <string name="accessibility_service_label">YOUSE TIMER</string>
     <string name="accessibility_service_description">Reads the WOLF screen and acts only inside WOLF, during a session you start. Chat text is not saved, and nothing is sent to the internet.</string>
 
     <string name="section_permissions">Permissions</string>
@@ -31,14 +31,14 @@
 
     <string name="error_empty_command">Enter your command.</string>
     <string name="error_command_too_long">The command is too long.</string>
-    <string name="error_interval_too_short">Use an interval of at least 10 seconds.</string>
+    <string name="error_interval_too_short">Give every command an interval of at least 10 seconds.</string>
     <string name="error_duration_too_short">Must be at least one interval.</string>
     <string name="error_jitter_range">Min must not be above max.</string>
-    <string name="error_jitter_too_large">Max jitter must be at least 5 seconds below the interval.</string>
+    <string name="error_jitter_too_large">Max jitter must be at least 5 seconds below every interval.</string>
 
     <string name="overlay_ready">Ready</string>
     <string name="overlay_paused">Paused</string>
-    <string name="overlay_detail">Left %1$s · ✓%2$d ✗%3$d · ⨯%4$d · #%5$d · ⚡%6$d</string>
+    <string name="overlay_detail">✓%1$d ✗%2$d · ⨯%3$d · ⚡%4$d</string>
     <string name="overlay_drag">Drag to move</string>
     <string name="overlay_start">Start or resume</string>
     <string name="overlay_pause">Pause</string>
@@ -67,19 +67,14 @@
     <string name="label_command_numbered">Command %1$d</string>
     <string name="button_add_command">+ Add Command</string>
     <string name="button_remove_command">Remove command</string>
-    <string name="mode_simultaneous">Send simultaneously</string>
-    <string name="mode_delay">Delay after previous</string>
-    <string name="label_delay_seconds">Delay (seconds)</string>
 
     <string name="label_rest_hours">Rest (hours)</string>
     <string name="label_rest_minutes">Rest (min)</string>
-    <string name="helper_rest">After a rest the session continues in WOLF. Set rest to 0 to stop after one work period.</string>
+    <string name="helper_rest">Work and Rest apply only when every command runs 24 hours. Set rest to 0 to stop after one work period.</string>
     <string name="label_room">Channel name or number / اسم أو رقم القناة</string>
     <string name="helper_room">Saved on this device only. Enter the exact channel name or number as it appears in your own WOLF account. Channels differ between accounts.</string>
 
     <string name="error_too_many_commands">Use at most 5 commands.</string>
-    <string name="error_bad_command_delay">Enter a delay from 1 to 3600 seconds.</string>
-    <string name="error_sequence_too_long">The delays must fit inside the interval, less the jitter and 5 seconds.</string>
     <string name="error_room_too_long">The room identifier is too long.</string>
 
     <string name="overlay_resting">Rest %1$s</string>
@@ -116,12 +111,12 @@
     <string name="disclosure_continue">Continue to settings</string>
     <string name="notice_not_channel">Waiting: not a confirmed WOLF channel</string>
     <string name="notification_alerts_channel">Session alerts</string>
-    <string name="notification_stopped_title">Auto Clicker stopped</string>
+    <string name="notification_stopped_title">YOUSE TIMER stopped</string>
     <string name="notification_retry">Retry</string>
     <string name="alert_stopped_locked">The screen stayed off or locked for over 15 minutes. Start the session again by hand.</string>
     <string name="alert_stopped_relaunch">Your WOLF channel could not be reached after 3 attempts. Nothing was sent.</string>
     <string name="alert_stopped_failures">5 sends failed in a row.</string>
-    <string name="alert_restore_failed">The session could not be restored. Check that the accessibility service is on, then start again.</string>
+    <string name="alert_restore_failed">The session could not be restored. Open the app and follow the recovery step.</string>
     <string name="log_title">Event log</string>
     <string name="log_last_send">Last send: %1$s</string>
     <string name="log_last_error">Last error: %1$s</string>
@@ -161,7 +156,7 @@
     <string name="guide_autostart_body">Some manufacturers add their own auto start or background permission. Look for it in the app info screen or the device manager app, and allow this app.</string>
     <string name="guide_screen_unavailable">This device does not offer that screen. Look for it in Settings.</string>
 
-    <string name="helper_command">Enter your own command. Nothing is filled in for you.</string>
+    <string name="helper_command">Enter your own command and how often to send it. Nothing is filled in for you.</string>
     <string name="notice_enter_command">Enter your command in the app first</string>
     <string name="notice_enter_channel">Enter your channel in the app first</string>
     <string name="event_room_not_found">Not sent: channel not found in this account</string>
@@ -173,15 +168,12 @@
     <string name="event_room_ambiguous">Not sent: several channels share this name</string>
     <string name="event_tab_not_found">Not sent: Channels tab not found</string>
 
-    <string name="label_schedule">Daily schedule</string>
-    <string name="helper_schedule">Starts and stops every day at the times you pick, in the phone\'s local time. While on, it replaces Work and Rest, whose settings stay saved.</string>
     <string name="schedule_start">Start: %1$s</string>
     <string name="schedule_end">End: %1$s</string>
     <string name="schedule_not_set">Not set</string>
     <string name="label_idle_screen">Keep screen on during idle hours</string>
     <string name="label_vibrate">Vibrate 30 seconds before a send when outside WOLF</string>
-    <string name="error_schedule_times">Pick a start time and a different end time.</string>
-    <string name="warning_exact_alarm">Exact alarms are not allowed, so scheduled times may run late. Allow alarms for this app in Settings.</string>
+    <string name="error_schedule_times">Pick a start time and a different end time for each command with daily hours.</string>
     <string name="button_check">Check without sending</string>
     <string name="check_open_wolf">Open WOLF and check</string>
     <string name="check_pass">Pass</string>
@@ -215,12 +207,11 @@
     <string name="status_schedule_stop">Schedule stops at %1$s</string>
     <string name="status_schedule_start">Schedule starts at %1$s</string>
     <string name="overlay_command_ready">Command ready, return to WOLF</string>
-    <string name="notice_idle_outside_hours">Outside the daily schedule hours</string>
     <string name="alert_idle_screen_off">The screen turned off during idle hours. If it is locked at the next start, the 15 minute rule applies.</string>
     <string name="event_popup_trigger">YOUSE 2: popup trigger detected</string>
     <string name="event_popup_unverified">YOUSE 2: popup sender cannot be verified</string>
-    <string name="event_schedule_start">Schedule: started</string>
-    <string name="event_schedule_stop">Schedule: stopped, now idle</string>
+    <string name="event_schedule_start">Commands active</string>
+    <string name="event_schedule_stop">All commands idle</string>
     <string name="event_schedule_missed">Schedule: start missed</string>
     <string name="event_idle_screen_off">Idle: screen turned off</string>
     <string name="event_check_passed">Check without sending: passed</string>
@@ -229,4 +220,19 @@
     <string name="event_killed_system">App closed by the phone\'s system</string>
     <string name="event_crashed">App crashed</string>
     <string name="event_stopped_user">App closed from recent apps or settings</string>
+
+    <string name="label_all_day">24 hours continuous</string>
+    <string name="status_all_day">24 hours</string>
+    <string name="status_error_short">Error</string>
+    <string name="command_pending">Waiting for WOLF</string>
+    <string name="status_command_line">%1$d. Every %2$s · %3$s · %4$s · next %5$s</string>
+    <string name="event_command_skipped">Pending command skipped: its hours ended</string>
+    <string name="recovery_title">The service needs to be reconnected</string>
+    <string name="recovery_message">Android stopped the accessibility service and did not reconnect it. Open the settings, turn this app\'s service off, then turn it on again. Your session then resumes by itself.</string>
+    <string name="recovery_button">Open accessibility settings</string>
+
+    <string name="label_overlay_size">Floating timer and badge size</string>
+    <string name="size_small">Small</string>
+    <string name="size_medium">Medium</string>
+    <string name="size_large">Large</string>
 </resources>

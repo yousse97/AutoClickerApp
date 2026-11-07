@@ -2,6 +2,8 @@
 <resources>
     <dimen name="overlay_start_x">12dp</dimen>
     <dimen name="overlay_start_y">96dp</dimen>
-    <dimen name="overlay_status_min_width">132dp</dimen>
-    <dimen name="overlay_button_size">40dp</dimen>
+    <dimen name="overlay_card_min_width">240dp</dimen>
+    <dimen name="overlay_text_max_width">216dp</dimen>
+    <dimen name="overlay_button_size">48dp</dimen>
+    <dimen name="overlay_bottom_reserve">96dp</dimen>
 </resources>

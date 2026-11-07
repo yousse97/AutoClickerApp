@@ -42,6 +42,10 @@ object LanguageManager {
         return context.createConfigurationContext(config).also { localized = tag to it }
     }
 
+    fun releaseCache() {
+        localized = null
+    }
+
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

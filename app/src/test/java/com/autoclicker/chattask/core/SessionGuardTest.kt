@@ -172,6 +172,15 @@ class SessionGuardTest {
         assertTrue(WolfUi.isLogoutTitle("تسجيل الخروج"))
         assertFalse(WolfUi.isLogoutTitle("تنبيه"))
         assertFalse(WolfUi.isLogoutTitle(null))
+        assertTrue(WolfUi.isLogoutTitle("Sign Out"))
+    }
+
+    @Test
+    fun `the channel button is recognised in Arabic and English, but not other buttons`() {
+        assertTrue(WolfUi.isMembersButton("اعضاء القناة"))
+        assertTrue(WolfUi.isMembersButton("Channel Members"))
+        assertFalse(WolfUi.isMembersButton("More"))
+        assertFalse(WolfUi.isMembersButton(null))
     }
 
     @Test

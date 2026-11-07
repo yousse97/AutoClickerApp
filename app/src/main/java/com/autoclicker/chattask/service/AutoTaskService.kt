@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityEvent
 import androidx.annotation.StringRes
 import com.autoclicker.chattask.R
 import com.autoclicker.chattask.core.CheckResult
+import com.autoclicker.chattask.core.CommandTimers
 import com.autoclicker.chattask.core.EventType
 import com.autoclicker.chattask.core.Foreground
 import com.autoclicker.chattask.core.GuardAction
@@ -15,6 +16,7 @@ import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.SessionGuard
 import com.autoclicker.chattask.core.SessionSchedule
 import com.autoclicker.chattask.core.TaskConfig
+import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.WolfUi
 import com.autoclicker.chattask.data.EventLog
 import com.autoclicker.chattask.data.SessionSnapshot
@@ -29,6 +31,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.random.Random
@@ -74,7 +77,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         popups = PopupEngine(this) { TaskBus.update { it.copy(popups = it.popups + 1) } }
         popups.launchIn(scope, nodeDispatcher)
         navigator = RoomNavigator(this, popups)
-        reactive = ReactiveEngine(this, sender, navigator, ::onReactionFinished, ::onPopupSeen, ::navigateForPopup)
+        reactive = ReactiveEngine(this, sender, navigator, ::onReactionFinished, ::logPopup, ::navigateForPopup)
         reactive.launchIn(scope, nodeDispatcher)
         runner = TaskRunner(
             scope = scope,
@@ -89,10 +92,6 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             store = store,
             hasSession = { session != null },
             startSession = { startNewSession(scheduled = true) },
-            stopSession = {
-                runner.stop()
-                endSession(notice = 0)
-            },
         )
         applyEventFilter(false)
         instance = this
@@ -112,9 +111,9 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     /** Called after the settings screen saves, so schedule changes apply at once. */
     fun reloadSettings() {
         val config = store.loadConfig()
-        scheduleDriver.schedule = config.schedule
+        scheduleDriver.config = config
         bar.vibrate = config.vibrateBeforeSend
-        ScheduleKeeper.arm(this, config.schedule)
+        ScheduleKeeper.arm(this, config)
         tickSchedule()
     }
 
@@ -128,14 +127,12 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     override fun onInterrupt() = Unit
 
-    /**
-     * The snapshot is kept on purpose. A system unbind must not lose the session, and if the user
-     * turned the service off, the watchdog tells them why nothing is running.
-     */
+    /** The snapshot stays: a system unbind must not lose the session, and the watchdog reports it. */
     override fun onUnbind(intent: Intent?): Boolean {
         Log.i(EventLog.TAG, "service unbound")
         if (::runner.isInitialized) runner.stop()
         instance = null
+        stopSelf()
         return super.onUnbind(intent)
     }
 
@@ -157,7 +154,6 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     /** A person pressing Start clears a stop, but the schedule still decides the hours. */
     private fun startManually() {
-        if (scheduleDriver.isOutsideHours()) return showNotice(R.string.notice_idle_outside_hours)
         store.blockedUntilMs = 0
         startNewSession(scheduled = false)
     }
@@ -169,13 +165,13 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         if (session != null) EventLog.add(this, EventType.SESSION_STOPPED)
         runner.stop()
         endSession(notice = 0)
-        scheduleDriver.blockRestOfPeriod()
+        scheduleDriver.blockAfterStop()
     }
 
     fun onOverlayClosed() = scheduleDriver.onOverlayClosed()
 
     fun tickSchedule() {
-        if (::scheduleDriver.isInitialized) scheduleDriver.tick()
+        if (::scheduleDriver.isInitialized && session == null) scheduleDriver.tickStopped()
     }
 
     private fun startNewSession(scheduled: Boolean) {
@@ -188,8 +184,11 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
         val cycles = ScheduleKeeper.cyclesOf(config, FIRST_SEND_DELAY_MS)
         activate(Session(config))
-        TaskBus.update { it.copy(popups = 0, reactions = 0, notice = 0, idleUntilMs = 0) }
-        runner.start(cycles.workPlan(SystemClock.elapsedRealtime()), jitterOf(config), cycles)
+        TaskBus.update { it.copy(popups = 0, reactions = 0, notice = 0, idleUntilMs = 0, stoppedByError = false) }
+        val timers = CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS)
+        val now = SystemClock.elapsedRealtime()
+        timers.refresh(now, LocalDateTime.now())
+        runner.start(cycles.workPlan(now), jitterOf(config), cycles, commandTimers = timers)
         // Never pulled out of another app: the channel is checked when they are back in WOLF.
         if (config.restrictToRoom && inWolf) relaunch()
         WatchdogReceiver.schedule(this)
@@ -211,6 +210,12 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         // The bar is retried by the watch loop, so a refused start does not stop the session.
         OverlayService.start(this)
         val now = SystemClock.elapsedRealtime()
+        val timers = CommandTimers.of(config.commands, FIRST_SEND_DELAY_MS)
+        val offsets = snapshot.timers.ifEmpty {
+            // Saved by the build before each command had a timer: the first one continues.
+            listOf(TimerOffset(snapshot.offsets.anchorInMs, snapshot.offsets.nextInMs, false))
+        }
+        timers.restore(offsets, now - elapsed)
         activate(Session(config))
         TaskBus.update { it.copy(popups = snapshot.popups, notice = 0) }
         runner.start(
@@ -222,13 +227,10 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             paused = snapshot.paused,
             isResting = snapshot.resting,
             workCycleSoFar = snapshot.workCycle,
+            commandTimers = timers,
         )
         WatchdogReceiver.schedule(this)
         EventLog.add(this, EventType.SESSION_RESTORED)
-    }
-
-    fun ensureOverlay() {
-        if (session != null) OverlayService.start(this)
     }
 
     private fun activate(newSession: Session) {
@@ -243,7 +245,11 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         )
         reactive.configure(WolfUi.PACKAGE, newSession.config.reactive)
         TaskBus.update {
-            it.copy(target = WolfUi.PACKAGE, keepScreenOn = newSession.config.keepScreenOn)
+            it.copy(
+                target = WolfUi.PACKAGE,
+                keepScreenOn = newSession.config.keepScreenOn,
+                commandNames = newSession.config.commands.map { command -> command.text },
+            )
         }
     }
 
@@ -285,10 +291,13 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
             if (session != null && ++ticks % OVERLAY_RETRY_TICKS == 0L) OverlayService.start(this)
             if (session == null || !active) continue
             val foreground = NodeTools.foreground(this)
-            bar.update(runner.view(), phase == TaskPhase.RUNNING, foreground)
+            val view = runner.view()
+            val idle = view.allIdle && !reactive.hasPending
+            bar.update(view, phase == TaskPhase.RUNNING && !idle, foreground)
+            scheduleDriver.tickSession(idle)
             if (relaunching) continue
             val now = SystemClock.elapsedRealtime()
-            handle(guard.observe(foreground, phase == TaskPhase.RESTING, now))
+            handle(guard.observe(foreground, phase == TaskPhase.RESTING || idle, now))
         }
     }
 
@@ -309,16 +318,13 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     private fun stopWithReason(type: EventType, @StringRes message: Int, offerRetry: Boolean = false) {
         runner.stop()
         endSession(notice = message)
-        scheduleDriver.blockRestOfPeriod()
+        TaskBus.update { it.copy(stoppedByError = true) }
+        scheduleDriver.blockAfterStop()
         EventLog.add(this, type)
         Alerts.post(this, message, offerRetry)
     }
 
-    private fun onPopupSeen() {
-        // WOLF gives the popup no sender field that could be read, so this cannot be confirmed.
-        EventLog.add(this, EventType.POPUP_TRIGGER)
-        EventLog.add(this, EventType.POPUP_SENDER_UNVERIFIED)
-    }
+    private fun logPopup() = Notices.logPopup(this)
 
     private fun navigateForPopup(room: String) {
         scope.launch {
@@ -346,10 +352,10 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         }
     }
 
-    private suspend fun performCycle(): CycleResult {
+    private suspend fun performCycle(index: Int): CycleResult {
         val current = session ?: return CycleResult.HELD
         return try {
-            sendCommands(current)
+            sendCommand(current, index)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: RuntimeException) {
@@ -364,24 +370,23 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         return CycleResult.FAILED
     }
 
-    /**
-     * Sends the cycle's commands. A command that cannot go out yet holds the slot, which sends it
-     * once when the screen is valid again. Commands already sent this cycle are not repeated.
-     */
-    private suspend fun sendCommands(current: Session): CycleResult {
-        val outcome = withContext(nodeDispatcher) { cycle.run(current.config) }
+    /** A command that cannot go out yet keeps its slot, which sends it once when back. */
+    private suspend fun sendCommand(current: Session, index: Int): CycleResult {
+        val command = current.config.commands[index].text
+        val outcome = withContext(nodeDispatcher) { cycle.send(current.config, command) }
         val hold = outcome.heldBy
         return when {
-            hold != null && !outcome.sentAny -> {
-                navigateIfNeeded(current.config, hold)
-                cycle.recordHold(hold)
-                CycleResult.HELD
-            }
-            outcome.completed || outcome.sentAny -> {
+            outcome.sent -> {
+                Log.i(EventLog.TAG, "sent command=${index + 1}")
                 cycle.clearHold()
                 showNotice(0)
                 handle(guard.onSendResult(true))
                 CycleResult.SENT
+            }
+            hold != null -> {
+                navigateIfNeeded(current.config, hold)
+                cycle.recordHold(hold)
+                CycleResult.HELD
             }
             else -> {
                 showNotice(outcome.sendNotice)
@@ -390,10 +395,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
         }
     }
 
-    /**
-     * Runs only when a send is due, so someone browsing WOLF between sends is left alone. Without
-     * the restriction the app never changes channels.
-     */
+    /** Only when a send is due, so browsing is left alone. Unrestricted, channels never change. */
     private fun navigateIfNeeded(config: TaskConfig, hold: EventType) {
         val wrongPlace = hold == EventType.HELD_WRONG_ROOM || hold == EventType.HELD_NOT_CHANNEL
         val now = SystemClock.elapsedRealtime()
@@ -415,12 +417,7 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
     /** Opens WOLF only after a tap on the check dialog. */
     fun checkWithoutSending(openWolf: Boolean, onDone: (List<CheckResult>) -> Unit) {
         scope.launch {
-            if (openWolf) {
-                val intent = packageManager.getLaunchIntentForPackage(WolfUi.PACKAGE)
-                intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                runCatching { startActivity(intent) }
-                delay(CHECK_OPEN_DELAY_MS)
-            }
+            if (openWolf) ReadOnlyChecker.openWolf(this@AutoTaskService)
             val config = store.loadConfig()
             onDone(withContext(nodeDispatcher) { ReadOnlyChecker.run(this@AutoTaskService, navigator, config) })
         }
@@ -430,10 +427,8 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
 
     private fun onReactionFinished(success: Boolean) {
         EventLog.add(this, if (success) EventType.REACTION_SENT else EventType.REACTION_FAILED)
-        if (success) {
-            TaskBus.update { it.copy(reactions = it.reactions + 1) }
-        } else {
-            showNotice(R.string.notice_reaction_failed)
+        TaskBus.update {
+            if (success) it.copy(reactions = it.reactions + 1) else it.copy(notice = R.string.notice_reaction_failed)
         }
     }
 
@@ -450,8 +445,15 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
                 sent = view.sent,
                 failed = view.failed,
                 workCycle = view.workCycle,
+                nextIndex = view.nextIndex,
+                nextTotalMs = view.nextTotalMs,
+                commands = view.commands,
             )
         }
+    }
+
+    override fun onCommandSkipped(index: Int) {
+        EventLog.add(this, EventType.COMMAND_SKIPPED)
     }
 
     override fun onRestFinished() {
@@ -472,22 +474,20 @@ class AutoTaskService : AccessibilityService(), TaskRunner.Listener {
                 savedAtWallMs = System.currentTimeMillis(),
                 resting = view.resting,
                 workCycle = view.workCycle,
+                timers = runner.timerOffsets(),
             ),
         )
     }
 
     override fun onFinished(view: RunnerView) {
         onTick(view)
-        val scheduled = scheduleDriver.schedule.enabled
-        endSession(if (scheduled) 0 else R.string.notice_finished)
-        if (scheduled) EventLog.add(this, EventType.SCHEDULE_STOP)
+        endSession(R.string.notice_finished)
     }
 
     companion object {
         private const val FIRST_SEND_DELAY_MS = 3_000L
         private const val WATCH_INTERVAL_MS = 1_000L
         private const val OVERLAY_RETRY_TICKS = 30L
-        private const val CHECK_OPEN_DELAY_MS = 4_000L
         private const val WATCHED_EVENTS = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
 

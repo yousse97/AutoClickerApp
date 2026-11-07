@@ -7,7 +7,6 @@ import android.app.ApplicationExitInfo
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.autoclicker.chattask.core.DailySchedule
 import com.autoclicker.chattask.core.EventType
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.core.WorkRestScheduler
@@ -19,6 +18,7 @@ import java.time.ZoneId
 /** Alarms that wake the app for daily schedule changes, and the record of why it was killed. */
 object ScheduleKeeper {
     private const val ACTION_SCHEDULE = "com.autoclicker.chattask.action.SCHEDULE"
+    private const val ENDLESS_MS = 3650L * 24 * 3_600_000
 
     fun toEpochMs(time: LocalDateTime): Long = time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -26,8 +26,13 @@ object ScheduleKeeper {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
 
+    /** The earliest coming start among the commands that have hours. */
+    fun nextStart(config: TaskConfig, now: LocalDateTime): LocalDateTime? = config.commands
+        .filter { !it.allDay && it.window.isComplete }
+        .minOfOrNull { it.window.nextStart(now) }
+
     /** Arms the next start or end. The service's own clock also watches while it is alive. */
-    fun arm(context: Context, schedule: DailySchedule) {
+    fun arm(context: Context, config: TaskConfig) {
         val alarms = context.getSystemService(AlarmManager::class.java)
         val intent = PendingIntent.getBroadcast(
             context,
@@ -36,9 +41,9 @@ object ScheduleKeeper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         alarms.cancel(intent)
-        if (!schedule.enabled || !schedule.isComplete) return
         val now = LocalDateTime.now()
-        val next = minOf(schedule.nextStart(now), schedule.nextEnd(now))
+        val windows = config.commands.filter { !it.allDay && it.window.isComplete }.map { it.window }
+        val next = windows.flatMap { listOf(it.nextStart(now), it.nextEnd(now)) }.minOrNull() ?: return
         if (canUseExactAlarms(context)) {
             alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, toEpochMs(next), intent)
         } else {
@@ -46,15 +51,17 @@ object ScheduleKeeper {
         }
     }
 
-    /** With a daily schedule, one work period lasts until the end time and there is no rest. */
+    /**
+     * Work and rest apply only when every command runs all day. With any daily hours, the session
+     * simply stays up and each command follows its own hours.
+     */
     fun cyclesOf(config: TaskConfig, firstDelayMs: Long): WorkRestScheduler {
-        val now = LocalDateTime.now()
-        val scheduled = config.schedule.enabled && config.schedule.isActive(now)
-        val untilEndMs = if (scheduled) toEpochMs(config.schedule.nextEnd(now)) - System.currentTimeMillis() else 0
+        val allDay = config.commands.all { it.allDay }
+        val shortest = config.commands.minOfOrNull { it.intervalSec } ?: 0
         return WorkRestScheduler(
-            workMs = if (scheduled) untilEndMs else config.workDurationSec * 1000L,
-            restMs = if (config.schedule.enabled) 0 else config.restDurationSec * 1000L,
-            intervalMs = config.intervalSec * 1000L,
+            workMs = if (allDay) config.workDurationSec * 1000L else ENDLESS_MS,
+            restMs = if (allDay) config.restDurationSec * 1000L else 0,
+            intervalMs = shortest * 1000L,
             firstDelayMs = firstDelayMs,
         )
     }

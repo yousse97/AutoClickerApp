@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">النقر التلقائي</string>
-    <string name="accessibility_service_label">خدمة مهام النقر التلقائي</string>
+    <string name="app_name">YOUSE TIMER</string>
+    <string name="accessibility_service_label">YOUSE TIMER</string>
     <string name="accessibility_service_description">تقرأ شاشة WOLF وتنفذ الأوامر داخله فقط، أثناء جلسة تبدأها أنت. لا تُحفظ نصوص المحادثات ولا يُرسل أي شيء إلى الإنترنت.</string>
 
     <string name="section_permissions">الأذونات</string>
@@ -31,14 +31,14 @@
 
     <string name="error_empty_command">أدخل أمرك.</string>
     <string name="error_command_too_long">الأمر طويل جدًا.</string>
-    <string name="error_interval_too_short">استخدم فاصلًا لا يقل عن 10 ثوانٍ.</string>
+    <string name="error_interval_too_short">حدد لكل أمر فاصلًا لا يقل عن 10 ثوانٍ.</string>
     <string name="error_duration_too_short">يجب ألا يقل عن فاصل واحد.</string>
     <string name="error_jitter_range">يجب ألا يتجاوز الحد الأدنى الحد الأقصى.</string>
-    <string name="error_jitter_too_large">يجب أن يقل أقصى تفاوت عن الفاصل بما لا يقل عن 5 ثوانٍ.</string>
+    <string name="error_jitter_too_large">يجب أن يقل أقصى تفاوت عن كل فاصل بما لا يقل عن 5 ثوانٍ.</string>
 
     <string name="overlay_ready">جاهز</string>
     <string name="overlay_paused">متوقف مؤقتًا</string>
-    <string name="overlay_detail">المتبقي %1$s · ✓%2$d ✗%3$d · ⨯%4$d · #%5$d · ⚡%6$d</string>
+    <string name="overlay_detail">✓%1$d ✗%2$d · ⨯%3$d · ⚡%4$d</string>
     <string name="overlay_drag">اسحب للتحريك</string>
     <string name="overlay_start">بدء أو استئناف</string>
     <string name="overlay_pause">إيقاف مؤقت</string>
@@ -67,19 +67,14 @@
     <string name="label_command_numbered">الأمر %1$d</string>
     <string name="button_add_command">+ إضافة أمر</string>
     <string name="button_remove_command">حذف الأمر</string>
-    <string name="mode_simultaneous">إرسال في نفس الوقت</string>
-    <string name="mode_delay">تأخير بعد السابق</string>
-    <string name="label_delay_seconds">التأخير (ثانية)</string>
 
     <string name="label_rest_hours">الراحة (ساعات)</string>
     <string name="label_rest_minutes">الراحة (دقائق)</string>
-    <string name="helper_rest">بعد الراحة تستمر الجلسة في WOLF. اجعل الراحة 0 للتوقف بعد فترة عمل واحدة.</string>
+    <string name="helper_rest">ينطبق العمل والراحة فقط عندما تعمل كل الأوامر 24 ساعة. اجعل الراحة 0 للتوقف بعد فترة عمل واحدة.</string>
     <string name="label_room">اسم أو رقم القناة</string>
     <string name="helper_room">يُحفظ على هذا الجهاز فقط. أدخل اسم القناة أو رقمها تمامًا كما يظهر في حسابك في WOLF. تختلف القنوات من حساب إلى آخر.</string>
 
     <string name="error_too_many_commands">استخدم 5 أوامر كحد أقصى.</string>
-    <string name="error_bad_command_delay">أدخل تأخيرًا من 1 إلى 3600 ثانية.</string>
-    <string name="error_sequence_too_long">يجب أن يتسع الفاصل لمجموع التأخيرات مع التفاوت و5 ثوانٍ.</string>
     <string name="error_room_too_long">معرّف الغرفة طويل جدًا.</string>
 
     <string name="overlay_resting">راحة %1$s</string>
@@ -116,12 +111,12 @@
     <string name="disclosure_continue">متابعة إلى الإعدادات</string>
     <string name="notice_not_channel">في الانتظار: لم يتم تأكيد قناة WOLF</string>
     <string name="notification_alerts_channel">تنبيهات الجلسة</string>
-    <string name="notification_stopped_title">توقف النقر التلقائي</string>
+    <string name="notification_stopped_title">توقف YOUSE TIMER</string>
     <string name="notification_retry">إعادة المحاولة</string>
     <string name="alert_stopped_locked">بقيت الشاشة مطفأة أو مقفلة أكثر من 15 دقيقة. ابدأ الجلسة يدويًا من جديد.</string>
     <string name="alert_stopped_relaunch">تعذر الوصول إلى قناتك في WOLF بعد 3 محاولات. لم يتم إرسال أي شيء.</string>
     <string name="alert_stopped_failures">فشل الإرسال 5 مرات متتالية.</string>
-    <string name="alert_restore_failed">تعذرت استعادة الجلسة. تأكد من تفعيل خدمة إمكانية الوصول، ثم ابدأ من جديد.</string>
+    <string name="alert_restore_failed">تعذرت استعادة الجلسة. افتح التطبيق واتبع خطوة الاستعادة.</string>
     <string name="log_title">سجل الأحداث</string>
     <string name="log_last_send">آخر إرسال: %1$s</string>
     <string name="log_last_error">آخر خطأ: %1$s</string>
@@ -161,7 +156,7 @@
     <string name="guide_autostart_body">تضيف بعض الشركات المصنعة إذنًا خاصًا للتشغيل التلقائي أو العمل في الخلفية. ابحث عنه في شاشة معلومات التطبيق أو في تطبيق إدارة الجهاز، واسمح لهذا التطبيق.</string>
     <string name="guide_screen_unavailable">هذه الشاشة غير متاحة على جهازك. ابحث عنها في الإعدادات.</string>
 
-    <string name="helper_command">أدخل أمرك الخاص. لا يتم ملء أي شيء تلقائيًا.</string>
+    <string name="helper_command">أدخل أمرك الخاص وعدد مرات إرساله. لا يتم ملء أي شيء تلقائيًا.</string>
     <string name="notice_enter_command">أدخل أمرك في التطبيق أولًا</string>
     <string name="notice_enter_channel">أدخل قناتك في التطبيق أولًا</string>
     <string name="event_room_not_found">لم يُرسل: القناة غير موجودة في هذا الحساب</string>
@@ -173,15 +168,12 @@
     <string name="event_room_ambiguous">لم يُرسل: عدة قنوات بالاسم نفسه</string>
     <string name="event_tab_not_found">لم يُرسل: لم يتم العثور على تبويب القنوات</string>
 
-    <string name="label_schedule">الجدول اليومي</string>
-    <string name="helper_schedule">يبدأ ويتوقف كل يوم في الأوقات التي تختارها، حسب توقيت الهاتف. عند تفعيله يحل محل العمل والراحة، وتبقى إعداداتهما محفوظة.</string>
     <string name="schedule_start">البداية: %1$s</string>
     <string name="schedule_end">النهاية: %1$s</string>
     <string name="schedule_not_set">غير محدد</string>
     <string name="label_idle_screen">إبقاء الشاشة مضاءة خلال ساعات التوقف</string>
     <string name="label_vibrate">الاهتزاز قبل الإرسال بـ30 ثانية عند الخروج من WOLF</string>
-    <string name="error_schedule_times">اختر وقت بداية ووقت نهاية مختلفين.</string>
-    <string name="warning_exact_alarm">المنبهات الدقيقة غير مسموحة، لذا قد تتأخر الأوقات المجدولة. اسمح بالمنبهات لهذا التطبيق من الإعدادات.</string>
+    <string name="error_schedule_times">اختر وقت بداية ووقت نهاية مختلفين لكل أمر له ساعات يومية.</string>
     <string name="button_check">فحص بدون إرسال</string>
     <string name="check_open_wolf">فتح WOLF والفحص</string>
     <string name="check_pass">ناجح</string>
@@ -215,12 +207,11 @@
     <string name="status_schedule_stop">يتوقف الجدول عند %1$s</string>
     <string name="status_schedule_start">يبدأ الجدول عند %1$s</string>
     <string name="overlay_command_ready">الأمر جاهز، عد إلى WOLF</string>
-    <string name="notice_idle_outside_hours">خارج ساعات الجدول اليومي</string>
     <string name="alert_idle_screen_off">انطفأت الشاشة خلال ساعات التوقف. إذا كان الهاتف مقفلًا عند البداية التالية، فستُطبق قاعدة الـ15 دقيقة.</string>
     <string name="event_popup_trigger">YOUSE 2: تم اكتشاف محفز في النافذة المنبثقة</string>
     <string name="event_popup_unverified">YOUSE 2: لا يمكن التحقق من مرسل النافذة المنبثقة</string>
-    <string name="event_schedule_start">الجدول: بدأ التشغيل</string>
-    <string name="event_schedule_stop">الجدول: توقف، والآن في الانتظار</string>
+    <string name="event_schedule_start">الأوامر نشطة</string>
+    <string name="event_schedule_stop">كل الأوامر في وضع الانتظار</string>
     <string name="event_schedule_missed">الجدول: فاتت البداية</string>
     <string name="event_idle_screen_off">الانتظار: انطفأت الشاشة</string>
     <string name="event_check_passed">فحص بدون إرسال: ناجح</string>
@@ -229,4 +220,19 @@
     <string name="event_killed_system">أغلق نظام الهاتف التطبيق</string>
     <string name="event_crashed">تعطل التطبيق</string>
     <string name="event_stopped_user">أُغلق التطبيق من التطبيقات الأخيرة أو الإعدادات</string>
+
+    <string name="label_all_day">24 ساعة متواصلة</string>
+    <string name="status_all_day">24 ساعة</string>
+    <string name="status_error_short">خطأ</string>
+    <string name="command_pending">في انتظار WOLF</string>
+    <string name="status_command_line">%1$d. كل %2$s · %3$s · %4$s · التالي %5$s</string>
+    <string name="event_command_skipped">تم تخطي أمر معلق: انتهت ساعاته</string>
+    <string name="recovery_title">يجب إعادة توصيل الخدمة</string>
+    <string name="recovery_message">أوقف أندرويد خدمة إمكانية الوصول ولم يعد توصيلها. افتح الإعدادات، وعطّل خدمة هذا التطبيق، ثم فعّلها من جديد. بعدها تستأنف الجلسة تلقائيًا.</string>
+    <string name="recovery_button">فتح إعدادات إمكانية الوصول</string>
+
+    <string name="label_overlay_size">حجم المؤقت العائم والشارة</string>
+    <string name="size_small">صغير</string>
+    <string name="size_medium">متوسط</string>
+    <string name="size_large">كبير</string>
 </resources>

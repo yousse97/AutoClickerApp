@@ -63,6 +63,7 @@ class LogActivity : AppCompatActivity() {
         EventType.POPUP_TRIGGER -> R.string.event_popup_trigger
         EventType.POPUP_SENDER_UNVERIFIED -> R.string.event_popup_unverified
         EventType.SCHEDULE_START -> R.string.event_schedule_start
+        EventType.COMMAND_SKIPPED -> R.string.event_command_skipped
         EventType.SCHEDULE_STOP -> R.string.event_schedule_stop
         EventType.SCHEDULE_MISSED -> R.string.event_schedule_missed
         EventType.IDLE_SCREEN_OFF -> R.string.event_idle_screen_off

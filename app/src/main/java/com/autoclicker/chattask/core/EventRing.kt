@@ -29,6 +29,7 @@ enum class EventType(val isError: Boolean = false) {
     POPUP_SENDER_UNVERIFIED,
     SCHEDULE_START,
     SCHEDULE_STOP,
+    COMMAND_SKIPPED,
     SCHEDULE_MISSED(isError = true),
     IDLE_SCREEN_OFF(isError = true),
     CHECK_PASSED,
@@ -50,7 +51,6 @@ private val SESSION_ENDS = ERROR_STOPS + setOf(
     EventType.SESSION_STARTED,
     EventType.SESSION_STOPPED,
     EventType.SESSION_RESTORED,
-    EventType.SCHEDULE_START,
 )
 
 data class LogEvent(val timeMs: Long, val type: EventType)

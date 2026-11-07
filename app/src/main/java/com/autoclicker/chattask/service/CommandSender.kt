@@ -53,6 +53,12 @@ class CommandSender(private val service: AccessibilityService) {
 
     /** The bottom-most message box, which is where chat apps put it. */
     fun findInput(target: String): AccessibilityNodeInfo? {
+        // The direct id lookup runs inside WOLF and costs far less than walking every view.
+        for (root in NodeTools.targetRoots(service, target)) {
+            root.findAccessibilityNodeInfosByViewId(WolfUi.INPUT_ID)
+                ?.firstOrNull(::isUsableInput)
+                ?.let { return it }
+        }
         var byId: AccessibilityNodeInfo? = null
         var byBounds: AccessibilityNodeInfo? = null
         var byHint: AccessibilityNodeInfo? = null

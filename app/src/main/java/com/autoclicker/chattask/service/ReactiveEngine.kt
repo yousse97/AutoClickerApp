@@ -38,7 +38,10 @@ class ReactiveEngine(
     private val signal = Channel<Unit>(Channel.CONFLATED)
     private val detector = ReactiveDetector()
     private val popupTrigger = PopupTrigger()
-    private var pendingPopup = false
+    @Volatile private var pendingPopup = false
+
+    /** True while a popup response waits, which keeps the session out of idle. */
+    val hasPending: Boolean get() = pendingPopup
 
     fun launchIn(scope: CoroutineScope, dispatcher: CoroutineDispatcher): Job =
         scope.launch(dispatcher) {
@@ -150,7 +153,7 @@ class ReactiveEngine(
     private companion object {
         const val CHAT_VIEW = "chat"
         const val MAX_ANCESTORS = 30
-        const val MIN_SCAN_GAP_MS = 400L
+        const val MIN_SCAN_GAP_MS = 800L
         const val MAX_ATTEMPTS = 2
         const val RETRY_DELAY_MS = 1_500L
     }

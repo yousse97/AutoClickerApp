@@ -12,4 +12,16 @@
     <color name="status_idle">#6A1B9A</color>
     <color name="status_error">#B71C1C</color>
     <color name="status_stopped">#616161</color>
+    <color name="overlay_card">#F2161A22</color>
+    <color name="overlay_card_alert">#F74A1414</color>
+    <color name="overlay_border">#33FFFFFF</color>
+    <color name="overlay_text">#FFFFFFFF</color>
+    <color name="overlay_text_soft">#B3FFFFFF</color>
+    <color name="overlay_running">#66BB6A</color>
+    <color name="overlay_attention">#FFA726</color>
+    <color name="overlay_paused">#FFD54F</color>
+    <color name="overlay_rest">#64B5F6</color>
+    <color name="overlay_idle">#BA68C8</color>
+    <color name="overlay_error">#FF6659</color>
+    <color name="overlay_stopped">#B0BEC5</color>
 </resources>

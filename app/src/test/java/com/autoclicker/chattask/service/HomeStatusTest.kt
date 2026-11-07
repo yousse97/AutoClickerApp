@@ -25,6 +25,11 @@ class HomeStatusTest {
     }
 
     @Test
+    fun `a running session with all commands idle shows idle`() {
+        assertEquals(HomeState.IDLE, homeStateOf(running.copy(idleUntilMs = 1), false))
+    }
+
+    @Test
     fun `an old error does not hide a running session`() {
         assertEquals(HomeState.RUNNING, homeStateOf(running, true))
     }

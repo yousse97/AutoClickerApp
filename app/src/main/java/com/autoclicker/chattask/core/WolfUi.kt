@@ -8,6 +8,7 @@ object WolfUi {
     const val PACKAGE = "com.palringo.android"
 
     const val INPUT = "chat_bar_input"
+    const val INPUT_ID = "$PACKAGE:id/$INPUT"
     const val SEND = "chat_bar_send"
     const val TITLE = "tag_title"
     const val BACK_ARROW = "tag_back_arrow"
@@ -21,14 +22,17 @@ object WolfUi {
     /** Only the selected tab shows a title, so the Channels tab is found by its position. */
     const val CHANNELS_TAB_INDEX = 3
 
-    /** Description of the toolbar button that channels have. */
-    const val MEMBERS_BUTTON_LABEL = "اعضاء القناة"
+    /** The toolbar button only channels have, from WOLF's group_members string. */
+    private val MEMBERS_BUTTON_LABELS = listOf("اعضاء القناة", "Channel Members").map(TextNormalizer::normalize)
+
+    fun isMembersButton(label: CharSequence?): Boolean =
+        label != null && TextNormalizer.normalize(label) in MEMBERS_BUTTON_LABELS
 
     const val DIALOG_TITLE_ID = "com.palringo.android:id/pal8_dialog_title"
-    private const val LOGOUT_TITLE = "تسجيل الخروج"
+    private val LOGOUT_TITLES = listOf("تسجيل الخروج", "Sign Out").map(TextNormalizer::normalize)
 
     fun isLogoutTitle(title: CharSequence?): Boolean =
-        title != null && TextNormalizer.normalize(title) == TextNormalizer.normalize(LOGOUT_TITLE)
+        title != null && TextNormalizer.normalize(title) in LOGOUT_TITLES
 
     /** "com.palringo.android:id/tag" and the bare test tag "tag" both become "tag". */
     fun entryName(viewId: CharSequence?): String? =

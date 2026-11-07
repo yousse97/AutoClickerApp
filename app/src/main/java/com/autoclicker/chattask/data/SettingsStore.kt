@@ -5,7 +5,7 @@ import com.autoclicker.chattask.core.CommandEntry
 import com.autoclicker.chattask.core.DailySchedule
 import com.autoclicker.chattask.core.ReactiveConfig
 import com.autoclicker.chattask.core.ScheduleOffsets
-import com.autoclicker.chattask.core.SendMode
+import com.autoclicker.chattask.core.TimerOffset
 import com.autoclicker.chattask.core.TaskConfig
 import com.autoclicker.chattask.security.SecureStore
 import org.json.JSONArray
@@ -21,6 +21,7 @@ data class SessionSnapshot(
     val savedAtWallMs: Long,
     val resting: Boolean,
     val workCycle: Int,
+    val timers: List<TimerOffset?>,
 )
 
 class SettingsStore(context: Context) {
@@ -30,32 +31,46 @@ class SettingsStore(context: Context) {
         context.applicationContext.getSharedPreferences("session", Context.MODE_PRIVATE)
     private val secure = SecureStore(context)
 
+    var overlayX: Int
+        get() = prefs.getInt(KEY_OVERLAY_X, NO_POSITION)
+        set(value) = prefs.edit().putInt(KEY_OVERLAY_X, value).apply()
+
+    var overlayY: Int
+        get() = prefs.getInt(KEY_OVERLAY_Y, NO_POSITION)
+        set(value) = prefs.edit().putInt(KEY_OVERLAY_Y, value).apply()
+
     /** A stop that needs a manual restart holds until this time. */
     var blockedUntilMs: Long
         get() = prefs.getLong(KEY_BLOCKED_UNTIL, 0)
         set(value) = prefs.edit().putLong(KEY_BLOCKED_UNTIL, value).apply()
 
-    var watchdogWaiting: Boolean
-        get() = prefs.getBoolean(KEY_WATCHDOG_WAITING, false)
-        set(value) = prefs.edit().putBoolean(KEY_WATCHDOG_WAITING, value).apply()
+    var watchdogMisses: Int
+        get() = prefs.getInt(KEY_WATCHDOG_MISSES, 0)
+        set(value) = prefs.edit().putInt(KEY_WATCHDOG_MISSES, value).apply()
 
     var lastExitLoggedMs: Long
         get() = prefs.getLong(KEY_LAST_EXIT, 0)
         set(value) = prefs.edit().putLong(KEY_LAST_EXIT, value).apply()
 
     var overlaySizeIndex: Int
-        get() = prefs.getInt(KEY_OVERLAY_SIZE, 1)
+        get() = prefs.getInt(KEY_OVERLAY_SIZE, OVERLAY_SIZE_MEDIUM)
         set(value) = prefs.edit().putInt(KEY_OVERLAY_SIZE, value).apply()
 
     fun loadConfig(): TaskConfig {
         val defaults = TaskConfig()
         // Settings saved before version 1.1 hold a single command and lack the x keywords.
         val legacy = !prefs.contains(KEY_COMMANDS)
-        val legacyCommand = prefs.getString(KEY_COMMAND, null)?.let { listOf(CommandEntry(it)) }
+        val legacyInterval = prefs.getInt(KEY_INTERVAL, LEGACY_INTERVAL_SEC)
+        val legacySchedule = DailySchedule(
+            prefs.getInt(KEY_SCHEDULE_START, DailySchedule.UNSET),
+            prefs.getInt(KEY_SCHEDULE_END, DailySchedule.UNSET),
+        ).takeIf { prefs.getBoolean(KEY_SCHEDULE_ENABLED, false) }
+        val legacyCommand = prefs.getString(KEY_COMMAND, null)
+            ?.let { listOf(CommandEntry(it, legacyInterval)) }
         return TaskConfig(
-            commands = prefs.getString(KEY_COMMANDS, null)?.let(::decodeCommands)
+            commands = prefs.getString(KEY_COMMANDS, null)
+                ?.let { decodeCommands(it, legacyInterval, legacySchedule) }
                 ?: legacyCommand ?: defaults.commands,
-            intervalSec = prefs.getInt(KEY_INTERVAL, defaults.intervalSec),
             workDurationSec = prefs.getInt(KEY_DURATION, defaults.workDurationSec),
             restDurationSec = prefs.getInt(KEY_REST, defaults.restDurationSec),
             jitterMinSec = prefs.getInt(KEY_JITTER_MIN, defaults.jitterMinSec),
@@ -63,12 +78,7 @@ class SettingsStore(context: Context) {
             popupKeywords = prefs.getString(KEY_KEYWORDS, null)?.let(TaskConfig::parseKeywords)
                 ?.let { if (legacy) (it + LEGACY_NEW_KEYWORDS).distinct() else it }
                 ?: defaults.popupKeywords,
-            schedule = DailySchedule(
-                enabled = prefs.getBoolean(KEY_SCHEDULE_ENABLED, false),
-                startMinute = prefs.getInt(KEY_SCHEDULE_START, DailySchedule.UNSET),
-                endMinute = prefs.getInt(KEY_SCHEDULE_END, DailySchedule.UNSET),
-                keepScreenOnWhenIdle = prefs.getBoolean(KEY_IDLE_SCREEN, true),
-            ),
+            keepScreenWhenIdle = prefs.getBoolean(KEY_IDLE_SCREEN, true),
             vibrateBeforeSend = prefs.getBoolean(KEY_VIBRATE, true),
             targetRoom = secure.taskRoom,
             restrictToRoom = secure.restrictTaskRoom,
@@ -92,16 +102,13 @@ class SettingsStore(context: Context) {
         secure.restrictReactiveRoom = config.reactive.restrictToRoom
         prefs.edit()
             .putString(KEY_COMMANDS, encodeCommands(config.commands))
-            .putInt(KEY_INTERVAL, config.intervalSec)
             .putInt(KEY_DURATION, config.workDurationSec)
             .putInt(KEY_REST, config.restDurationSec)
             .putInt(KEY_JITTER_MIN, config.jitterMinSec)
             .putInt(KEY_JITTER_MAX, config.jitterMaxSec)
             .putString(KEY_KEYWORDS, config.popupKeywords.joinToString("\n"))
-            .putBoolean(KEY_SCHEDULE_ENABLED, config.schedule.enabled)
-            .putInt(KEY_SCHEDULE_START, config.schedule.startMinute)
-            .putInt(KEY_SCHEDULE_END, config.schedule.endMinute)
-            .putBoolean(KEY_IDLE_SCREEN, config.schedule.keepScreenOnWhenIdle)
+            .putBoolean(KEY_SCHEDULE_ENABLED, false)
+            .putBoolean(KEY_IDLE_SCREEN, config.keepScreenWhenIdle)
             .putBoolean(KEY_VIBRATE, config.vibrateBeforeSend)
             .putBoolean(KEY_REACTIVE_ENABLED, config.reactive.enabled)
             .putString(KEY_REACTIVE_TRIGGERS, config.reactive.triggers.joinToString("\n"))
@@ -125,6 +132,7 @@ class SettingsStore(context: Context) {
             .putLong(KEY_S_SAVED_AT, snapshot.savedAtWallMs)
             .putBoolean(KEY_S_RESTING, snapshot.resting)
             .putInt(KEY_S_WORK_CYCLE, snapshot.workCycle)
+            .putString(KEY_S_TIMERS, encodeTimers(snapshot.timers))
             .apply()
     }
 
@@ -144,6 +152,7 @@ class SettingsStore(context: Context) {
             savedAtWallMs = sessionPrefs.getLong(KEY_S_SAVED_AT, 0),
             resting = sessionPrefs.getBoolean(KEY_S_RESTING, false),
             workCycle = sessionPrefs.getInt(KEY_S_WORK_CYCLE, 1),
+            timers = sessionPrefs.getString(KEY_S_TIMERS, null)?.let(::decodeTimers).orEmpty(),
         )
     }
 
@@ -152,42 +161,90 @@ class SettingsStore(context: Context) {
     }
 
     companion object {
+        const val NO_POSITION = Int.MIN_VALUE
+        const val OVERLAY_SIZE_SMALL = 0
+        const val OVERLAY_SIZE_MEDIUM = 1
+        const val OVERLAY_SIZE_LARGE = 2
+
         fun encodeCommands(commands: List<CommandEntry>): String {
             val array = JSONArray()
             commands.forEach {
                 array.put(
-                    JSONObject().put(JSON_TEXT, it.text).put(JSON_MODE, it.mode.name)
-                        .put(JSON_DELAY, it.delaySec),
+                    JSONObject().put(JSON_TEXT, it.text).put(JSON_INTERVAL, it.intervalSec)
+                        .put(JSON_ALL_DAY, it.allDay).put(JSON_START, it.startMinute)
+                        .put(JSON_END, it.endMinute),
                 )
             }
             return array.toString()
         }
 
-        /** Returns null for unreadable data, so the caller falls back to its default. */
-        fun decodeCommands(json: String): List<CommandEntry>? = runCatching {
+        fun encodeTimers(timers: List<TimerOffset?>): String {
+            val array = JSONArray()
+            timers.forEach { timer ->
+                array.put(
+                    timer?.let {
+                        JSONObject().put(JSON_ANCHOR, it.anchorInMs).put(JSON_NEXT, it.nextInMs)
+                            .put(JSON_HELD, it.held)
+                    } ?: JSONObject.NULL,
+                )
+            }
+            return array.toString()
+        }
+
+        fun decodeTimers(json: String): List<TimerOffset?>? = runCatching {
+            val array = JSONArray(json)
+            List(array.length()) { index ->
+                array.optJSONObject(index)?.let {
+                    TimerOffset(it.getLong(JSON_ANCHOR), it.getLong(JSON_NEXT), it.getBoolean(JSON_HELD))
+                }
+            }
+        }.getOrNull()
+
+        /**
+         * Returns null for unreadable data, so the caller falls back to its default. Commands saved
+         * before each had its own timing take the old shared interval and any old daily hours.
+         */
+        fun decodeCommands(
+            json: String,
+            legacyIntervalSec: Int = 0,
+            legacySchedule: DailySchedule? = null,
+        ): List<CommandEntry>? = runCatching {
             val array = JSONArray(json)
             List(array.length()) { index ->
                 val item = array.getJSONObject(index)
+                val isLegacy = !item.has(JSON_INTERVAL)
+                val window = legacySchedule?.takeIf { isLegacy && it.isComplete }
                 CommandEntry(
                     text = item.getString(JSON_TEXT),
-                    mode = SendMode.valueOf(item.getString(JSON_MODE)),
-                    delaySec = item.getInt(JSON_DELAY),
+                    intervalSec = item.optInt(JSON_INTERVAL, legacyIntervalSec),
+                    allDay = window == null && item.optBoolean(JSON_ALL_DAY, true),
+                    startMinute = window?.startMinute ?: item.optInt(JSON_START, DailySchedule.UNSET),
+                    endMinute = window?.endMinute ?: item.optInt(JSON_END, DailySchedule.UNSET),
                 )
             }
         }.getOrNull()
 
         private const val JSON_TEXT = "text"
-        private const val JSON_MODE = "mode"
-        private const val JSON_DELAY = "delay"
+        private const val JSON_INTERVAL = "interval"
+        private const val JSON_ALL_DAY = "all_day"
+        private const val JSON_START = "start"
+        private const val JSON_END = "end"
+        private const val JSON_ANCHOR = "anchor"
+        private const val JSON_NEXT = "next"
+        private const val JSON_HELD = "held"
+        private const val LEGACY_INTERVAL_SEC = 610
         private val LEGACY_NEW_KEYWORDS = listOf("x", "X")
 
         private const val KEY_COMMAND = "command"
         private const val KEY_COMMANDS = "commands"
         private const val KEY_REST = "rest_sec"
-        private const val KEY_OVERLAY_SIZE = "overlay_size"
+        private const val KEY_OVERLAY_SIZE = "overlay_size_setting"
+        private const val KEY_OVERLAY_X = "overlay_x"
+        private const val KEY_OVERLAY_Y = "overlay_y"
+        private const val KEY_S_TIMERS = "timers"
         private const val KEY_BLOCKED_UNTIL = "blocked_until"
         private const val KEY_LAST_EXIT = "last_exit"
-        private const val KEY_WATCHDOG_WAITING = "watchdog_waiting"
+        private const val KEY_WATCHDOG_MISSES = "watchdog_misses"
         private const val KEY_SCHEDULE_ENABLED = "schedule_enabled"
         private const val KEY_SCHEDULE_START = "schedule_start"
         private const val KEY_SCHEDULE_END = "schedule_end"

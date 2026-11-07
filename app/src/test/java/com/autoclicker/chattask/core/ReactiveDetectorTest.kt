@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReactiveDetectorTest {
-    private val own = listOf(CommandEntry("my command"))
+    private val own = listOf(CommandEntry("my command", intervalSec = 610))
 
     @Test
     fun `old messages set the baseline and do not fire`() {

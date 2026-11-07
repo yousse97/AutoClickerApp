@@ -36,38 +36,68 @@
             app:icon="@drawable/ic_close" />
     </LinearLayout>
 
-    <RadioGroup
-        android:id="@+id/groupMode"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AutoClicker.Field"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:hint="@string/label_interval_minutes">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputMinutes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AutoClicker.Field"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/label_interval_seconds">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSeconds"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/switchAllDay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/label_all_day" />
+
+    <LinearLayout
+        android:id="@+id/rowHours"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <RadioButton
-            android:id="@+id/radioSimultaneous"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonStart"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/mode_simultaneous" />
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1" />
 
-        <RadioButton
-            android:id="@+id/radioDelay"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonEnd"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/mode_delay" />
-    </RadioGroup>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layoutDelay"
-        style="@style/Widget.AutoClicker.Field"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/label_delay_seconds">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputDelay"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1" />
+    </LinearLayout>
 </LinearLayout>

@@ -122,7 +122,7 @@ class PopupEngine(
         "${node.viewIdResourceName}|${node.text}|${node.contentDescription}|${NodeTools.boundsOf(node)}"
 
     private companion object {
-        const val MIN_SCAN_GAP_MS = 120L
-        const val FULL_SCAN_GAP_MS = 600L
+        const val MIN_SCAN_GAP_MS = 300L
+        const val FULL_SCAN_GAP_MS = 3_000L
     }
 }

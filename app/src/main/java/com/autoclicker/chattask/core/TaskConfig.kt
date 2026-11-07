@@ -4,7 +4,6 @@ package com.autoclicker.chattask.core
 data class TaskConfig(
     /** Starts as one empty row: each user enters their own commands. */
     val commands: List<CommandEntry> = listOf(CommandEntry("")),
-    val intervalSec: Int = 10 * 60 + 10,
     val workDurationSec: Int = 22 * 60 * 60,
     /** Zero means stop after one work period instead of looping. */
     val restDurationSec: Int = 2 * 60 * 60 + 60,
@@ -16,8 +15,7 @@ data class TaskConfig(
     /** Send only while the chat header shows [targetRoom]. */
     val restrictToRoom: Boolean = false,
     val reactive: ReactiveConfig = ReactiveConfig(),
-    /** When enabled, this replaces the work and rest cycle. Those settings stay saved. */
-    val schedule: DailySchedule = DailySchedule(),
+    val keepScreenWhenIdle: Boolean = true,
     val vibrateBeforeSend: Boolean = true,
     /** Ignore matches inside scrolling lists, so chat messages reading "تم" are never clicked. */
     val skipListItems: Boolean = true,
@@ -28,15 +26,15 @@ data class TaskConfig(
         if (texts.isEmpty() || texts.any { it.isEmpty() }) add(ConfigError.EMPTY_COMMAND)
         if (texts.any { it.length > MAX_COMMAND_LENGTH }) add(ConfigError.COMMAND_TOO_LONG)
         if (commands.size > MAX_COMMANDS) add(ConfigError.TOO_MANY_COMMANDS)
-        val hasBadDelay = commands.drop(1).any {
-            it.mode == SendMode.DELAYED && it.delaySec !in 1..MAX_COMMAND_DELAY_SEC
-        }
-        if (hasBadDelay) add(ConfigError.BAD_COMMAND_DELAY)
-        if (intervalSec < MIN_INTERVAL_SEC) add(ConfigError.INTERVAL_TOO_SHORT)
-        if (workDurationSec < intervalSec) add(ConfigError.DURATION_TOO_SHORT)
+        val intervals = commands.map { it.intervalSec }
+        if (intervals.any { it < MIN_INTERVAL_SEC }) add(ConfigError.INTERVAL_TOO_SHORT)
+        val shortest = intervals.minOrNull() ?: MIN_INTERVAL_SEC
+        val usesWorkRest = commands.all { it.allDay }
+        if (usesWorkRest && workDurationSec < shortest) add(ConfigError.DURATION_TOO_SHORT)
         if (jitterMinSec < 0 || jitterMaxSec < jitterMinSec) add(ConfigError.JITTER_RANGE)
-        if (jitterMaxSec + MIN_JITTER_MARGIN_SEC > intervalSec) add(ConfigError.JITTER_TOO_LARGE)
-        if (schedule.enabled && !schedule.isComplete) add(ConfigError.SCHEDULE_TIMES)
+        val intervalsSet = shortest >= MIN_INTERVAL_SEC
+        if (intervalsSet && jitterMaxSec + MIN_JITTER_MARGIN_SEC > shortest) add(ConfigError.JITTER_TOO_LARGE)
+        if (commands.any { !it.allDay && !it.window.isComplete }) add(ConfigError.SCHEDULE_TIMES)
         val rooms = listOf(targetRoom, reactive.room)
         if (rooms.any { it.trim().length > MAX_ROOM_LENGTH }) add(ConfigError.ROOM_TOO_LONG)
         if (restrictToRoom && targetRoom.isBlank()) add(ConfigError.ROOM_REQUIRED)
@@ -48,9 +46,6 @@ data class TaskConfig(
                 add(ConfigError.REACTIVE_ROOM_REQUIRED)
             }
         }
-        val spareMs = (intervalSec.toLong() - jitterMaxSec - MIN_JITTER_MARGIN_SEC) * 1000
-        val waitMs = CommandSequence.totalWaitMs(commands)
-        if (waitMs > 0 && waitMs > spareMs) add(ConfigError.SEQUENCE_TOO_LONG)
     }
 
     companion object {
@@ -58,7 +53,6 @@ data class TaskConfig(
         const val MIN_JITTER_MARGIN_SEC = 5
         const val MAX_COMMAND_LENGTH = 1000
         const val MAX_COMMANDS = 5
-        const val MAX_COMMAND_DELAY_SEC = 3600
         const val MAX_ROOM_LENGTH = 64
 
         val DEFAULT_POPUP_KEYWORDS = listOf("تم", "إغلاق", "اغلاق", "close", "done", "x", "X", "×", "✕")
@@ -73,8 +67,6 @@ enum class ConfigError {
     EMPTY_COMMAND,
     COMMAND_TOO_LONG,
     TOO_MANY_COMMANDS,
-    BAD_COMMAND_DELAY,
-    SEQUENCE_TOO_LONG,
     INTERVAL_TOO_SHORT,
     DURATION_TOO_SHORT,
     JITTER_RANGE,

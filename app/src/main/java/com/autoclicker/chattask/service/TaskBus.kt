@@ -24,6 +24,13 @@ data class TaskStatus(
     val idleUntilMs: Long = 0,
     val idleKeepScreen: Boolean = false,
     val heldByLock: Boolean = false,
+    /** The size chosen in settings, or -1 until one is chosen in this run. */
+    val overlaySize: Int = -1,
+    val stoppedByError: Boolean = false,
+    val nextIndex: Int? = null,
+    val nextTotalMs: Long = 0,
+    val commandNames: List<String> = emptyList(),
+    val commands: List<CommandView> = emptyList(),
     val keepScreenOn: Boolean = false,
     /** Message for the overlay, or 0 for none. */
     @StringRes val notice: Int = 0,

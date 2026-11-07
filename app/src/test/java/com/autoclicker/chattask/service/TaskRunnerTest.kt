@@ -1,5 +1,8 @@
 package com.autoclicker.chattask.service
 
+import com.autoclicker.chattask.core.CommandEntry
+import com.autoclicker.chattask.core.CommandState
+import com.autoclicker.chattask.core.CommandTimers
 import com.autoclicker.chattask.core.JitterPolicy
 import com.autoclicker.chattask.core.SessionSchedule
 import com.autoclicker.chattask.core.WorkRestScheduler
@@ -14,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDateTime
 import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -22,6 +26,11 @@ class TaskRunnerTest {
         var finished: RunnerView? = null
         var plansSaved = 0
         var restsFinished = 0
+        var skipped = 0
+
+        override fun onCommandSkipped(index: Int) {
+            skipped++
+        }
 
         override fun onRestFinished() {
             restsFinished++
@@ -44,13 +53,109 @@ class TaskRunnerTest {
     private fun TestScope.runner(scope: CoroutineScope, action: suspend () -> Boolean) =
         cycleRunner(scope) { if (action()) CycleResult.SENT else CycleResult.FAILED }
 
-    private fun TestScope.cycleRunner(scope: CoroutineScope, action: suspend () -> CycleResult) = TaskRunner(
+    private fun TestScope.cycleRunner(scope: CoroutineScope, action: suspend () -> CycleResult) =
+        indexRunner(scope) { action() }
+
+    private var wall = LocalDateTime.of(2026, 3, 10, 12, 0)
+
+    private fun TestScope.indexRunner(scope: CoroutineScope, action: suspend (Int) -> CycleResult) = TaskRunner(
         scope = scope,
         clock = { currentTime },
         random = Random(3),
         action = action,
         listener = recorder,
+        wallClock = { wall },
     )
+
+    private fun TestScope.startCommands(runner: TaskRunner, vararg commands: CommandEntry) {
+        val timers = CommandTimers.of(commands.toList(), 3_000)
+        timers.refresh(currentTime, wall)
+        runner.start(plan(36_000_000), noJitter, commandTimers = timers)
+    }
+
+    @Test
+    fun `commands follow their own intervals in one session`() = runTest {
+        val sent = ArrayList<Int>()
+        val runner = indexRunner(backgroundScope) { sent += it; CycleResult.SENT }
+        startCommands(runner, CommandEntry("a", 60), CommandEntry("b", 150))
+
+        advanceTimeBy(160_000)
+        runCurrent()
+
+        assertEquals(3, sent.count { it == 0 })
+        assertEquals(2, sent.count { it == 1 })
+    }
+
+    @Test
+    fun `due commands go out one at a time with a gap`() = runTest {
+        val times = ArrayList<Long>()
+        val runner = indexRunner(backgroundScope) { times += currentTime; CycleResult.SENT }
+        startCommands(runner, CommandEntry("a", 60), CommandEntry("b", 60))
+
+        advanceTimeBy(10_000)
+        runCurrent()
+
+        assertEquals(2, times.size)
+        assertTrue(times[1] - times[0] >= 2_000)
+    }
+
+    @Test
+    fun `any two sends keep the gap, even when due a moment apart`() = runTest {
+        val times = ArrayList<Long>()
+        val runner = indexRunner(backgroundScope) { times += currentTime; CycleResult.SENT }
+        startCommands(runner, CommandEntry("a", 60), CommandEntry("b", 61))
+
+        advanceTimeBy(200_000)
+        runCurrent()
+
+        assertTrue(times.size > 4)
+        assertTrue(times.zipWithNext { first, second -> second - first }.all { it >= 2_000 })
+    }
+
+    @Test
+    fun `a command that stays held is skipped when its hours end, others carry on`() = runTest {
+        val sent = ArrayList<Int>()
+        val runner = indexRunner(backgroundScope) {
+            if (it == 0) CycleResult.HELD else {
+                sent += it
+                CycleResult.SENT
+            }
+        }
+        startCommands(
+            runner,
+            CommandEntry("a", 60, allDay = false, startMinute = 11 * 60, endMinute = 13 * 60),
+        )
+        advanceTimeBy(10_000)
+        runCurrent()
+        assertEquals(CommandState.PENDING, runner.view().commands[0].state)
+
+        wall = wall.withHour(13)
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(1, recorder.skipped)
+        assertEquals(CommandState.IDLE, runner.view().commands[0].state)
+        assertTrue(runner.view().allIdle)
+        assertEquals(TaskPhase.RUNNING, runner.phase)
+    }
+
+    @Test
+    fun `a session stays up while all commands are idle and resumes at the next hours`() = runTest {
+        var sends = 0
+        val runner = indexRunner(backgroundScope) { sends++; CycleResult.SENT }
+        startCommands(runner, CommandEntry("a", 60, allDay = false, startMinute = 13 * 60, endMinute = 14 * 60))
+
+        advanceTimeBy(120_000)
+        runCurrent()
+        assertTrue(runner.view().allIdle)
+        assertEquals(0, sends)
+        assertEquals(null, recorder.finished)
+
+        wall = wall.withHour(13)
+        advanceTimeBy(6_000)
+        runCurrent()
+        assertEquals(1, sends)
+    }
 
     private fun TestScope.plan(durationMs: Long) =
         SessionSchedule.create(currentTime, 3_000, interval, durationMs)
@@ -190,7 +295,7 @@ class TaskRunnerTest {
         assertTrue(runner.view().sessionLeftMs < 3_400_000)
 
         held = false
-        advanceTimeBy(2_000)
+        advanceTimeBy(3_000)
         runCurrent()
         assertEquals(1, sends)
         assertTrue(runner.view().nextInMs > 0)

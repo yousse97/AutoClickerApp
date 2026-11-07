@@ -1,7 +1,6 @@
 package com.autoclicker.chattask.ui
 
 import android.Manifest
-import android.app.TimePickerDialog
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.SuppressLint
 import android.content.ComponentName
@@ -12,7 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
-import android.text.format.DateFormat
 import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
@@ -29,7 +27,6 @@ import com.autoclicker.chattask.core.CheckItem
 import com.autoclicker.chattask.core.CheckResult
 import com.autoclicker.chattask.core.CheckStatus
 import com.autoclicker.chattask.core.ConfigError
-import com.autoclicker.chattask.core.DailySchedule
 import com.autoclicker.chattask.core.ReadOnlyCheck
 import com.autoclicker.chattask.core.WolfScreen
 import com.autoclicker.chattask.core.ReactiveConfig
@@ -45,15 +42,13 @@ import com.autoclicker.chattask.service.ScheduleKeeper
 import com.autoclicker.chattask.service.TaskBus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: SettingsStore
     private lateinit var commandEditor: CommandListEditor
     private lateinit var statusCard: StatusCardView
-    private var scheduleStart = DailySchedule.UNSET
-    private var scheduleEnd = DailySchedule.UNSET
+    private var detachedTicks = 0
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPermissions() }
@@ -86,20 +81,17 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
-                    statusCard.render(TaskBus.status.value, currentSchedule())
+                    statusCard.render(TaskBus.status.value, commandEditor.read())
+                    showRecovery()
                     delay(STATUS_REFRESH_MS)
                 }
             }
         }
-        savedInstanceState?.let {
-            scheduleStart = it.getInt(STATE_SCHEDULE_START, scheduleStart)
-            scheduleEnd = it.getInt(STATE_SCHEDULE_END, scheduleEnd)
-        }
-        showScheduleTimes()
-        binding.buttonScheduleStart.setOnClickListener { pickTime(scheduleStart) { scheduleStart = it } }
-        binding.buttonScheduleEnd.setOnClickListener { pickTime(scheduleEnd) { scheduleEnd = it } }
-        binding.switchSchedule.setOnCheckedChangeListener { _, _ -> showScheduleTimes() }
         binding.buttonCheck.setOnClickListener { runCheck(openWolf = false) }
+        showOverlaySize()
+        binding.buttonRecover.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
 
         binding.topBar.buttonLanguage.setOnClickListener { LanguageManager.toggle(this) }
         binding.buttonTestChannel.setOnClickListener { testChannel() }
@@ -134,8 +126,6 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_COMMANDS, SettingsStore.encodeCommands(commandEditor.read()))
         outState.putInt(STATE_TAB, binding.tabsTask.selectedTabPosition)
-        outState.putInt(STATE_SCHEDULE_START, scheduleStart)
-        outState.putInt(STATE_SCHEDULE_END, scheduleEnd)
     }
 
     /** Always shown first, so nobody turns the service on without knowing what it does. */
@@ -150,44 +140,18 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun currentSchedule() = DailySchedule(
-        enabled = binding.switchSchedule.isChecked,
-        startMinute = scheduleStart,
-        endMinute = scheduleEnd,
-        keepScreenOnWhenIdle = binding.switchIdleScreen.isChecked,
-    )
-
-    private fun pickTime(current: Int, onPicked: (Int) -> Unit) {
-        val known = current >= 0
-        TimePickerDialog(
-            this,
-            { _, hour, minute ->
-                onPicked(hour * 60 + minute)
-                showScheduleTimes()
-            },
-            if (known) current / 60 else 12,
-            if (known) current % 60 else 0,
-            DateFormat.is24HourFormat(this),
-        ).show()
-    }
-
-    private fun showScheduleTimes() = with(binding) {
-        rowSchedule.visibility = if (switchSchedule.isChecked) View.VISIBLE else View.GONE
-        buttonScheduleStart.text = getString(R.string.schedule_start, timeLabel(scheduleStart))
-        buttonScheduleEnd.text = getString(R.string.schedule_end, timeLabel(scheduleEnd))
-        val noExactAlarms = switchSchedule.isChecked && !ScheduleKeeper.canUseExactAlarms(this@MainActivity)
-        textScheduleError.visibility = if (noExactAlarms) View.VISIBLE else View.GONE
-        textScheduleError.setText(R.string.warning_exact_alarm)
-    }
-
-    /** Twelve-hour phones show AM or PM here, so the picked period is always clear. */
-    private fun timeLabel(minute: Int): String {
-        if (minute < 0) return getString(R.string.schedule_not_set)
-        val time = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, minute / 60)
-            set(Calendar.MINUTE, minute % 60)
-        }
-        return DateFormat.getTimeFormat(this).format(time.time)
+    /**
+     * After a crash Android can leave the service switched on but not attached. Only the user can
+     * fix that, by turning it off and on, so the app says so instead of showing it as granted.
+     */
+    private fun showRecovery() {
+        val setting = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        val expected = ComponentName(this, AutoTaskService::class.java).flattenToString()
+        val switchedOn = setting.orEmpty().split(':').any { it.equals(expected, ignoreCase = true) }
+        // A normal rebind takes a second or two, and the card must not flash during one.
+        detachedTicks = if (switchedOn && AutoTaskService.instance == null) detachedTicks + 1 else 0
+        val detached = detachedTicks >= RECOVERY_DELAY_TICKS
+        binding.cardRecovery.visibility = if (detached) View.VISIBLE else View.GONE
     }
 
     private fun runCheck(openWolf: Boolean) {
@@ -229,6 +193,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Applies at once: the bar is told straight away, and the choice stays on this device. */
+    private fun showOverlaySize() = with(binding) {
+        val choices = mapOf(
+            R.id.radioSizeSmall to SettingsStore.OVERLAY_SIZE_SMALL,
+            R.id.radioSizeMedium to SettingsStore.OVERLAY_SIZE_MEDIUM,
+            R.id.radioSizeLarge to SettingsStore.OVERLAY_SIZE_LARGE,
+        )
+        choices.entries.first { it.value == store.overlaySizeIndex }.let { groupOverlaySize.check(it.key) }
+        groupOverlaySize.setOnCheckedChangeListener { _, id ->
+            val size = choices[id] ?: return@setOnCheckedChangeListener
+            store.overlaySizeIndex = size
+            TaskBus.update { it.copy(overlaySize = size) }
+        }
+    }
+
     private fun showTab(position: Int) {
         binding.panelTask1.visibility = if (position == 0) View.VISIBLE else View.GONE
         binding.panelReactive.visibility = if (position == 1) View.VISIBLE else View.GONE
@@ -240,8 +219,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showConfig(config: TaskConfig) = with(binding) {
-        inputIntervalMinutes.setText((config.intervalSec / 60).toString())
-        inputIntervalSeconds.setText((config.intervalSec % 60).toString())
         inputDurationHours.setText((config.workDurationSec / 3600).toString())
         inputDurationMinutes.setText((config.workDurationSec % 3600 / 60).toString())
         inputRestHours.setText((config.restDurationSec / 3600).toString())
@@ -258,19 +235,13 @@ class MainActivity : AppCompatActivity() {
         inputReactiveRoom.setText(config.reactive.room)
         switchSkipLists.isChecked = config.skipListItems
         switchKeepScreen.isChecked = config.keepScreenOn
-        scheduleStart = config.schedule.startMinute
-        scheduleEnd = config.schedule.endMinute
-        switchSchedule.isChecked = config.schedule.enabled
-        switchIdleScreen.isChecked = config.schedule.keepScreenOnWhenIdle
+        switchIdleScreen.isChecked = config.keepScreenWhenIdle
         switchVibrate.isChecked = config.vibrateBeforeSend
     }
 
     private fun readConfig() = with(binding) {
         TaskConfig(
             commands = commandEditor.read(),
-            intervalSec = seconds(
-                inputIntervalMinutes.intValue() * 60L + inputIntervalSeconds.intValue(),
-            ),
             workDurationSec = seconds(
                 inputDurationHours.intValue() * 3600L + inputDurationMinutes.intValue() * 60L,
             ),
@@ -282,7 +253,7 @@ class MainActivity : AppCompatActivity() {
             popupKeywords = TaskConfig.parseKeywords(inputKeywords.text?.toString().orEmpty()),
             targetRoom = inputRoom.text?.toString().orEmpty().trim(),
             restrictToRoom = checkRestrictRoom.isChecked,
-            schedule = currentSchedule(),
+            keepScreenWhenIdle = switchIdleScreen.isChecked,
             vibrateBeforeSend = switchVibrate.isChecked,
             reactive = ReactiveConfig(
                 enabled = switchReactive.isChecked,
@@ -308,19 +279,15 @@ class MainActivity : AppCompatActivity() {
         val listError = message(
             ConfigError.COMMAND_TOO_LONG,
             ConfigError.TOO_MANY_COMMANDS,
-            ConfigError.BAD_COMMAND_DELAY,
-            ConfigError.SEQUENCE_TOO_LONG,
+            ConfigError.INTERVAL_TOO_SHORT,
+            ConfigError.JITTER_TOO_LARGE,
+            ConfigError.SCHEDULE_TIMES,
         )
         textCommandsError.text = listError
         textCommandsError.visibility = if (listError == null) View.GONE else View.VISIBLE
-        layoutIntervalMinutes.error = message(ConfigError.INTERVAL_TOO_SHORT)
         layoutDurationHours.error = message(ConfigError.DURATION_TOO_SHORT)
-        layoutJitterMin.error = message(ConfigError.JITTER_RANGE, ConfigError.JITTER_TOO_LARGE)
+        layoutJitterMin.error = message(ConfigError.JITTER_RANGE)
         layoutRoom.error = message(ConfigError.ROOM_TOO_LONG, ConfigError.ROOM_REQUIRED)
-        if (ConfigError.SCHEDULE_TIMES in errors) {
-            textScheduleError.visibility = View.VISIBLE
-            textScheduleError.setText(R.string.error_schedule_times)
-        }
         layoutTriggers.error = message(ConfigError.REACTIVE_NO_TRIGGER)
         layoutReaction.error = message(ConfigError.REACTIVE_NO_COMMAND)
         layoutReactiveRoom.error = message(ConfigError.REACTIVE_ROOM_REQUIRED)
@@ -332,8 +299,6 @@ class MainActivity : AppCompatActivity() {
         ConfigError.EMPTY_COMMAND -> R.string.error_empty_command
         ConfigError.COMMAND_TOO_LONG -> R.string.error_command_too_long
         ConfigError.TOO_MANY_COMMANDS -> R.string.error_too_many_commands
-        ConfigError.BAD_COMMAND_DELAY -> R.string.error_bad_command_delay
-        ConfigError.SEQUENCE_TOO_LONG -> R.string.error_sequence_too_long
         ConfigError.INTERVAL_TOO_SHORT -> R.string.error_interval_too_short
         ConfigError.DURATION_TOO_SHORT -> R.string.error_duration_too_short
         ConfigError.JITTER_RANGE -> R.string.error_jitter_range
@@ -402,9 +367,8 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         const val STATE_COMMANDS = "commands"
         const val STATE_TAB = "tab"
-        const val STATE_SCHEDULE_START = "schedule_start"
-        const val STATE_SCHEDULE_END = "schedule_end"
         const val STATUS_REFRESH_MS = 1_000L
+        const val RECOVERY_DELAY_TICKS = 10
         val REACTIVE_ERRORS = setOf(
             ConfigError.REACTIVE_NO_TRIGGER,
             ConfigError.REACTIVE_NO_COMMAND,

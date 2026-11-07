@@ -8,10 +8,8 @@ import java.time.LocalTime
  * end earlier than the start means the window crosses midnight.
  */
 data class DailySchedule(
-    val enabled: Boolean = false,
     val startMinute: Int = UNSET,
     val endMinute: Int = UNSET,
-    val keepScreenOnWhenIdle: Boolean = true,
 ) {
     val isComplete: Boolean
         get() = startMinute in 0 until MINUTES_PER_DAY && endMinute in 0 until MINUTES_PER_DAY &&
